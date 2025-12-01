@@ -130,6 +130,12 @@ const Homepage = () => {
         />
 
         <Box style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+
+          {!isAdmin && (
+              <Tooltip title="About">
+            <InfoIcon onClick={() => navigate("/about")}/>
+          </Tooltip>
+          )}
           {isAdmin && <AddIcon onClick={() => navigate("/addproducts")} />}
 
           {!isAdmin && (
@@ -173,9 +179,6 @@ const Homepage = () => {
             </Tooltip>
           )}
 
-          <Tooltip title="About">
-            <InfoIcon onClick={() => navigate("/")}/>
-          </Tooltip>
         </Box>
       </Box>
 
