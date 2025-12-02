@@ -283,7 +283,7 @@ const Homepage = () => {
                           marginTop: "10px",
                         }}
                       >
-                        ${item.price}
+                        ₦{item.price}
                       </Typography>
                     </CardContent>
                   </Card>

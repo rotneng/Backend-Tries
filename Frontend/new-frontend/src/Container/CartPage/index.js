@@ -72,7 +72,7 @@ const CartPage = () => {
               <Box sx={{ flexGrow: 1, ml: 2 }}>
                 <Typography variant="h6">{item.title}</Typography>
                 <Typography color="green" fontWeight="bold">
-                  ${item.price}
+                  ₦{item.price}
                 </Typography>
               </Box>
 
@@ -102,7 +102,7 @@ const CartPage = () => {
         <Grid item xs={12} md={4}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6">
-              Total: ${totalPrice.toFixed(2)}
+              Total: ₦{totalPrice.toFixed(2)}
             </Typography>
             <Button
               variant="contained"

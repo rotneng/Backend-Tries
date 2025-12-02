@@ -107,7 +107,7 @@ const ProductDetails = () => {
               variant="h4"
               sx={{ color: "#0f2a1d", fontWeight: "bold", my: 2 }}
             >
-              ${product.price}
+              ₦{product.price}
             </Typography>
             <Typography sx={{ mb: 4 }}>{product.description}</Typography>
 

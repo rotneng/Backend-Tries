@@ -1,7 +1,8 @@
 const User = require("../Models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const { createTransporter, sendEmail } = require("../Util/EmailService");
+const Token = require("../Models/tokenModel");
 
 exports.registerUser = async (req, res) => {
   try {
@@ -14,8 +15,25 @@ exports.registerUser = async (req, res) => {
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
+    function randomNumber() {
+      return Math.floor(100000 + Math.random() * 900000);
+    }
 
     const user = new User({ username, password: hashedPassword, email, role });
+
+    try {
+      const otp = randomNumber();
+      const token = new Token({
+        email,
+        token: otp,
+      });
+      await token.save();
+      await sendEmail(email, otp);
+      console.log("email sent succesfully", otp);
+    } catch (error) {
+      console.log("error sending mail nodemailer", error);
+    }
+
     await user.save();
     return res.status(200).json({ message: "user registered succesfully" });
   } catch (error) {
@@ -48,14 +66,12 @@ exports.loginUser = async (req, res) => {
       "qwerty",
       { expiresIn: "1h" }
     );
-    return res
-      .status(200)
-      .json({
-        message: "login succesfull",
-        token,
-        role: user.role,
-        username: user.username,
-      });
+    return res.status(200).json({
+      message: "login succesfull",
+      token,
+      role: user.role,
+      username: user.username,
+    });
   } catch (error) {
     console.log("error in login", error);
     return res.status(400).json({ message: "error in login of user" });
