@@ -13,6 +13,7 @@ import AboutPage from "./Container/AboutPage";
 import CheckoutPage from "./Container/Checkout";
 import AddressPage from "./Container/AddressPage";
 import PaymentPage from "./Container/PaymentPage";
+import ManageAddressPage from "./Container/ManageAddress";
 
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
             <Route path="/addproducts" element={<AddProducts />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/address" element={<AddressPage/>} />
+            <Route path="/manageAddress" element={<ManageAddressPage/>} />
             <Route path="/payment" element={<PaymentPage/>} />
           </Route>
         </Routes>

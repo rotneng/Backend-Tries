@@ -6,6 +6,7 @@ const productRoute = require("./Route/productRoute");
 const messageRoute = require("./Route/messageRoute");
 const userRoute = require("./Route/userRoute");
 const cartRoutes = require("./Route/cartRoutes");
+const addressRoute = require("./Route/addressRoutes")
 const app = express();
 const port = 3000;
 
@@ -18,6 +19,7 @@ app.use("/product", productRoute);
 app.use("/messages", messageRoute);
 app.use("/user", userRoute);
 app.use("/cart", cartRoutes);
+app.use("/address", addressRoute)
 
 mongoose
   .connect(

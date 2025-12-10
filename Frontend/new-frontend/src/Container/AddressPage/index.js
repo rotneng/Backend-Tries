@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -11,6 +11,7 @@ import {
   Divider,
   TextField,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 
 import PersonIcon from "@mui/icons-material/Person";
@@ -18,11 +19,18 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import HomeIcon from "@mui/icons-material/Home";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { addAddress, updateAddress } from "../../Actions/address.actions";
 
 const AddressPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
 
   const token = localStorage.getItem("token");
+  const addressToEdit = location.state?.addressToEdit;
+
+  const addressState = useSelector((state) => state.addressList || {});
+  const { loading, error } = addressState;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -32,34 +40,36 @@ const AddressPage = () => {
     state: "",
   });
 
+  useEffect(() => {
+    if (addressToEdit) {
+      setFormData({
+        fullName: addressToEdit.fullName,
+        phone: addressToEdit.phone,
+        address: addressToEdit.address,
+        city: addressToEdit.city,
+        state: addressToEdit.state,
+      });
+    }
+  }, [addressToEdit]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSaveAndProceed = async () => {
-    try {
-      if (!token) {
-        alert("Please login to save your address.");
-        navigate("/signin");
-        return;
-      } else {
-        navigate("/checkout");
-      }
-
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      await axios.post("http://localhost:3000/user/shipping", formData, config);
-
-      navigate("/checkout");
-    } catch (error) {
-      console.error("Error saving address:", error);
-      alert(error.response?.data?.message || "Failed to save address.");
+    if (!token) {
+      alert("Please login to save your address.");
+      navigate("/signin");
+      return;
     }
+
+    if (addressToEdit) {
+      await dispatch(updateAddress(addressToEdit._id, formData));
+    } else {
+      await dispatch(addAddress(formData));
+    }
+
+    navigate("/checkout");
   };
 
   return (
@@ -96,7 +106,7 @@ const AddressPage = () => {
             >
               <Box sx={{ p: 3, borderBottom: "1px solid #eee" }}>
                 <Typography variant="h6" fontWeight="bold" color="#0f2a1d">
-                  Add New Address
+                  {addressToEdit ? "Edit Address" : "Add New Address"}
                 </Typography>
               </Box>
 
@@ -195,6 +205,14 @@ const AddressPage = () => {
                       />
                     </Grid>
                   </Grid>
+
+                  {error && (
+                    <Typography color="error" sx={{ mt: 2 }}>
+                      {typeof error === "object"
+                        ? JSON.stringify(error)
+                        : error}
+                    </Typography>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -232,6 +250,7 @@ const AddressPage = () => {
           <Button
             variant="contained"
             onClick={handleSaveAndProceed}
+            disabled={loading}
             sx={{
               backgroundColor: "#0f2a1d",
               color: "white",
@@ -242,9 +261,16 @@ const AddressPage = () => {
               fontSize: "1rem",
               boxShadow: "0 4px 12px rgba(15, 42, 29, 0.2)",
               "&:hover": { bgcolor: "#144430" },
+              "&.Mui-disabled": { bgcolor: "#ccc" },
             }}
           >
-            Proceed →
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : addressToEdit ? (
+              "Update Address"
+            ) : (
+              "Save & Proceed"
+            )}
           </Button>
         </Box>
       </Box>

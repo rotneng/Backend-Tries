@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -20,51 +19,41 @@ import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import PhoneIcon from "@mui/icons-material/Phone";
 
+import { getAddresses } from "../../Actions/address.actions";
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
 
   const { cartItems } = useSelector((state) => state.cart);
+  const addressState = useSelector((state) => state.addressList || {});
+  const { addresses, loading: loadingAddress } = addressState;
+
   const token = localStorage.getItem("token");
 
-  const [hasAddress, setHasAddress] = useState(false);
-  const [addressData, setAddressData] = useState(null);
-  const [loadingAddress, setLoadingAddress] = useState(true);
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
   useEffect(() => {
-    const fetchAddress = async () => {
-      if (!token) {
-        setLoadingAddress(false);
-        return;
-      }
-      try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
-        const { data } = await axios.get(
-          "http://localhost:3000/user/shipping",
-          config
-        );
+    if (token) {
+      dispatch(getAddresses());
+    }
+  }, [dispatch, token]);
 
-        if (data && Object.keys(data).length > 0) {
-          setAddressData(data);
-          setHasAddress(true);
-        }
-      } catch (error) {
-        console.error("Error fetching address:", error);
-      } finally {
-        setLoadingAddress(false);
-      }
-    };
-    fetchAddress();
-  }, [token]);
+  useEffect(() => {
+    if (location.state?.selectedAddress) {
+      setSelectedAddress(location.state.selectedAddress);
+    } else if (addresses && addresses.length > 0) {
+      setSelectedAddress(addresses[0]);
+    } else {
+      setSelectedAddress(null);
+    }
+  }, [addresses, location.state]);
 
   const subTotal = cartItems
     ? cartItems.reduce((acc, item) => acc + item.qty * item.price, 0)
     : 0;
-  const shippingCost = 1000;
-  const total = subTotal + shippingCost;
+  const total = subTotal;
 
   return (
     <Box
@@ -109,15 +98,18 @@ const CheckoutPage = () => {
                 <Typography variant="h6" fontWeight="bold" color="#0f2a1d">
                   Select Delivery Address
                 </Typography>
-                {hasAddress && !loadingAddress && (
-                  <Button
-                    startIcon={<EditIcon />}
-                    onClick={() => navigate("/address")}
-                    sx={{ color: "#0f2a1d", textTransform: "none" }}
-                  >
-                    Change
-                  </Button>
-                )}
+
+                <Button
+                  startIcon={<EditIcon />}
+                  onClick={() => navigate("/manageAddress")}
+                  sx={{
+                    color: "#0f2a1d",
+                    textTransform: "none",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {selectedAddress ? "Change Address" : "Manage Addresses"}
+                </Button>
               </Box>
 
               <CardContent
@@ -125,9 +117,9 @@ const CheckoutPage = () => {
                   flexGrow: 1,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: hasAddress ? "flex-start" : "center",
-                  justifyContent: hasAddress ? "flex-start" : "center",
-                  textAlign: hasAddress ? "left" : "center",
+                  alignItems: selectedAddress ? "flex-start" : "center",
+                  justifyContent: selectedAddress ? "flex-start" : "center",
+                  textAlign: selectedAddress ? "left" : "center",
                   p: 4,
                 }}
               >
@@ -142,7 +134,7 @@ const CheckoutPage = () => {
                   >
                     <CircularProgress sx={{ color: "#0f2a1d" }} />
                   </Box>
-                ) : !hasAddress ? (
+                ) : !selectedAddress ? (
                   <>
                     <Box
                       sx={{
@@ -168,8 +160,7 @@ const CheckoutPage = () => {
                       color="text.secondary"
                       sx={{ maxWidth: "400px", mb: 4, lineHeight: 1.6 }}
                     >
-                      You haven't added any delivery address yet. Add one to
-                      continue with your order.
+                      You haven't added any delivery address yet.
                     </Typography>
                     <Button
                       variant="contained"
@@ -183,7 +174,7 @@ const CheckoutPage = () => {
                         boxShadow: "0 4px 12px rgba(15, 42, 29, 0.2)",
                         "&:hover": { bgcolor: "#144430" },
                       }}
-                      onClick={() => navigate("/address")}
+                      onClick={() => navigate("/manageAddress")}
                     >
                       + Add New Address
                     </Button>
@@ -226,7 +217,7 @@ const CheckoutPage = () => {
                           >
                             <PersonIcon fontSize="small" />
                             <Typography variant="body1" fontWeight="500">
-                              {addressData.fullName}
+                              {selectedAddress.fullName}
                             </Typography>
                           </Box>
                         </Grid>
@@ -241,7 +232,7 @@ const CheckoutPage = () => {
                           >
                             <PhoneIcon fontSize="small" />
                             <Typography variant="body1">
-                              {addressData.phone}
+                              {selectedAddress.phone}
                             </Typography>
                           </Box>
                         </Grid>
@@ -251,8 +242,8 @@ const CheckoutPage = () => {
                         variant="body1"
                         sx={{ mt: 2, lineHeight: 1.6 }}
                       >
-                        {addressData.address}, <br />
-                        {addressData.city}, {addressData.state}
+                        {selectedAddress.address}, <br />
+                        {selectedAddress.city}, {selectedAddress.state}
                       </Typography>
                     </Box>
                   </Box>
@@ -270,7 +261,6 @@ const CheckoutPage = () => {
               >
                 Order Summary
               </Typography>
-
               <Box
                 sx={{
                   maxHeight: "350px",
@@ -298,16 +288,7 @@ const CheckoutPage = () => {
                         sx={{ width: 60, height: 60, bgcolor: "#eee" }}
                       />
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                          sx={{
-                            display: "-webkit-box",
-                            overflow: "hidden",
-                            WebkitBoxOrient: "vertical",
-                            WebkitLineClamp: 2,
-                          }}
-                        >
+                        <Typography variant="body2" fontWeight="bold">
                           {item.title}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -320,36 +301,7 @@ const CheckoutPage = () => {
                     </Box>
                   ))}
               </Box>
-
               <Divider sx={{ my: 2 }} />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mb: 1,
-                }}
-              >
-                <Typography color="text.secondary">Subtotal:</Typography>
-                <Typography fontWeight="bold">
-                  ₦{subTotal.toLocaleString()}
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mb: 2,
-                }}
-              >
-                <Typography color="text.secondary">Shipping:</Typography>
-                <Typography fontWeight="bold">
-                  ₦{shippingCost.toLocaleString()}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
               <Box
                 sx={{
                   display: "flex",
@@ -396,10 +348,9 @@ const CheckoutPage = () => {
           >
             Back to Cart
           </Button>
-
           <Button
             variant="contained"
-            disabled={!hasAddress || loadingAddress}
+            disabled={!selectedAddress || loadingAddress}
             sx={{
               backgroundColor: "#0f2a1d",
               color: "white",
@@ -410,14 +361,11 @@ const CheckoutPage = () => {
               fontSize: "1rem",
               boxShadow: "0 4px 12px rgba(15, 42, 29, 0.2)",
               "&:hover": { bgcolor: "#144430" },
-              "&.Mui-disabled": {
-                bgcolor: "#ccc",
-                color: "#666",
-              },
+              "&.Mui-disabled": { bgcolor: "#ccc", color: "#666" },
             }}
             onClick={() => navigate("/payment")}
           >
-            Proceed to Payment →
+            Proceed →
           </Button>
         </Box>
       </Box>

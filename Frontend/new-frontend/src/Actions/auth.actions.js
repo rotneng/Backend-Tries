@@ -32,18 +32,18 @@ export const login = (loginData, navigate) => {
                 price: item.price,
               },
             };
-            
+
             return axios.post(
-              "http://localhost:3000/cart/user/cart/addtocart", 
-              payload, 
+              "http://localhost:3000/cart/user/cart/addtocart",
+              payload,
               {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
               }
             );
           });
 
           await Promise.all(mergeRequests);
-          
+
           localStorage.removeItem("cart");
           console.log("Cart merged successfully.");
         }

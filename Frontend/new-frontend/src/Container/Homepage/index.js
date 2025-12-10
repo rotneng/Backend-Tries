@@ -149,6 +149,7 @@ const Homepage = () => {
                 sx={{ color: "white" }}
               >
                 <InfoIcon />
+                {/* <p>About</p> */}
               </IconButton>
             </Tooltip>
           )}
@@ -159,6 +160,7 @@ const Homepage = () => {
                 sx={{ color: "white" }}
               >
                 <AddIcon />
+                {/* <p>Add Products</p> */}
               </IconButton>
             </Tooltip>
           )}
@@ -170,6 +172,7 @@ const Homepage = () => {
                 style={{ color: "white" }}
               >
                 <ShoppingCartIcon />
+                {/* <p>Cart</p> */}
               </IconButton>
             </Tooltip>
           )}
@@ -190,6 +193,7 @@ const Homepage = () => {
               <Tooltip title="Logout">
                 <IconButton onClick={handleLogout} style={{ color: "white" }}>
                   <LogoutIcon />
+                  {/* <p>Logout</p> */}
                 </IconButton>
               </Tooltip>
             </Box>
@@ -200,6 +204,7 @@ const Homepage = () => {
                 style={{ color: "white" }}
               >
                 <AccountCircleIcon />
+                {/* <p>SignIn</p> */}
               </IconButton>
             </Tooltip>
           )}
