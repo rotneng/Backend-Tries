@@ -55,6 +55,17 @@ const CheckoutPage = () => {
     : 0;
   const total = subTotal;
 
+  const handleProceedToPayment = () => {
+    if (selectedAddress) {
+      navigate("/payment", {
+        state: {
+          selectedAddress: selectedAddress,
+          total: total,
+        },
+      });
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -108,7 +119,7 @@ const CheckoutPage = () => {
                     fontWeight: "bold",
                   }}
                 >
-                  {selectedAddress ? "Change Address" : "Manage Addresses"}
+                  {selectedAddress ? "Add Address" : "Add Address"}
                 </Button>
               </Box>
 
@@ -264,9 +275,7 @@ const CheckoutPage = () => {
               <Box
                 sx={{
                   maxHeight: "350px",
-                  backgroundColor: "#ccc",
                   borderRadius: "4px",
-                  overflowY: "auto",
                 }}
               >
                 {cartItems &&
@@ -348,10 +357,11 @@ const CheckoutPage = () => {
           >
             Back to Cart
           </Button>
+
           <Button
             variant="contained"
             disabled={!selectedAddress || loadingAddress}
-            onClick={() => navigate("/payment")}
+            onClick={handleProceedToPayment}
             sx={{
               backgroundColor: "#0f2a1d",
               color: "white",

@@ -1,9 +1,15 @@
-import { configureStore, createReducer } from "@reduxjs/toolkit";
-import rootReducer from "../Reducers";
+import { configureStore } from "@reduxjs/toolkit";
 import productReducer from "../Reducers/product.reducer";
 import cartReducer from "../Reducers/cartSlice";
 import authReducer from "../Reducers/auth.reducer";
 import addressReducer from "../Reducers/address.reducer";
+
+import {
+  orderCreateReducer,
+  orderDetailsReducer,
+  orderPayReducer,
+  orderListMyReducer,
+} from "../Reducers/orderReducer";
 
 const store = configureStore({
   reducer: {
@@ -11,6 +17,11 @@ const store = configureStore({
     cart: cartReducer,
     auth: authReducer,
     addressList: addressReducer,
+
+    orderCreate: orderCreateReducer,
+    orderDetails: orderDetailsReducer,
+    orderPay: orderPayReducer,
+    orderMyList: orderListMyReducer,
   },
 });
 

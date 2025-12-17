@@ -1,13 +1,328 @@
-import { Box } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { createOrder } from "../../Actions/order.actions";
+import { orderConstants } from "../../Actions/constant";
 
 const PaymentPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { selectedAddress, total } = location.state || {};
 
+  const { cartItems } = useSelector((state) => state.cart);
+  const orderCreate = useSelector((state) => state.orderCreate);
+  const { loading, success, error, order } = orderCreate;
 
-    return(
-        <Box>
-            PaymentPage
-        </Box>
-    );
+  const [paymentMethod, setPaymentMethod] = useState("Card");
+
+  useEffect(() => {
+    if (!selectedAddress || !cartItems || cartItems.length === 0) {
+      navigate("/cart");
+    }
+  }, [selectedAddress, cartItems, navigate]);
+
+  useEffect(() => {
+    if (success) {
+      dispatch({ type: orderConstants.ORDER_CREATE_RESET });
+      navigate(`/order/${order._id}`);
+    }
+  }, [navigate, success, order, dispatch]);
+
+  const handlePayment = () => {
+    if (!selectedAddress) {
+      alert("Address is missing. Please go back and select an address.");
+      return;
+    }
+    console.log("Original Cart Items:", cartItems);
+
+    const mappedOrderItems = cartItems.map((item) => {
+      return {
+        product: item._id || item.product,
+        title: item.name || item.title || "Unknown Item",
+        image: item.img || item.image || "https://via.placeholder.com/150",
+        price: item.price,
+        qty: item.qty || item.quantity || 1,
+      };
+    });
+
+    console.log("Mapped Items to Send:", mappedOrderItems);
+
+    const orderData = {
+      orderItems: mappedOrderItems,
+      shippingAddress: selectedAddress,
+      paymentMethod: paymentMethod,
+      itemsPrice: total,
+      shippingPrice: 0,
+      taxPrice: 0,
+      totalPrice: total,
+    };
+
+    dispatch(createOrder(orderData));
+  };
+
+  if (!selectedAddress) return null;
+
+  return (
+    <Box
+      sx={{
+        padding: { xs: 2, md: "40px" },
+        backgroundColor: "#f4f4f4",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "1200px",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate("/checkout")}
+          sx={{
+            mb: 3,
+            backgroundColor: "#0f2a1d",
+            color: "white",
+            padding: "12px 24px",
+            borderRadius: "40px",
+            fontWeight: "bold",
+            width: "fit-content",
+            "&:hover": { backgroundColor: "#144430" },
+          }}
+        >
+          Back to Address
+        </Button>
+
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          color="#0f2a1d"
+          sx={{ mb: 4 }}
+        >
+          Payment Method
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={8}>
+            <Card elevation={3} sx={{ borderRadius: "12px", mb: 3 }}>
+              <Box sx={{ p: 3, borderBottom: "1px solid #eee" }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Select Payment Option
+                </Typography>
+              </Box>
+              <CardContent sx={{ p: 3 }}>
+                <FormControl component="fieldset" fullWidth>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <Box
+                      onClick={() => setPaymentMethod("Card")}
+                      sx={{
+                        border:
+                          paymentMethod === "Card"
+                            ? "2px solid #0f2a1d"
+                            : "1px solid #e0e0e0",
+                        borderRadius: "8px",
+                        mb: 2,
+                        p: 2,
+                        bgcolor: paymentMethod === "Card" ? "#f0fdf4" : "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FormControlLabel
+                        value="Card"
+                        control={
+                          <Radio
+                            sx={{
+                              color: "#0f2a1d",
+                              "&.Mui-checked": { color: "#0f2a1d" },
+                            }}
+                          />
+                        }
+                        label={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <CreditCardIcon sx={{ color: "#0f2a1d" }} />
+                            <Typography fontWeight="bold">
+                              Pay with Card
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+
+                    <Box
+                      onClick={() => setPaymentMethod("POD")}
+                      sx={{
+                        border:
+                          paymentMethod === "POD"
+                            ? "2px solid #0f2a1d"
+                            : "1px solid #e0e0e0",
+                        borderRadius: "8px",
+                        p: 2,
+                        bgcolor: paymentMethod === "POD" ? "#f0fdf4" : "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FormControlLabel
+                        value="POD"
+                        control={
+                          <Radio
+                            sx={{
+                              color: "#0f2a1d",
+                              "&.Mui-checked": { color: "#0f2a1d" },
+                            }}
+                          />
+                        }
+                        label={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <LocalShippingIcon sx={{ color: "#0f2a1d" }} />
+                            <Typography fontWeight="bold">
+                              Pay on Delivery
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+                  </RadioGroup>
+                </FormControl>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card
+              elevation={3}
+              sx={{ borderRadius: "12px", p: 3, position: "sticky", top: 20 }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{ mb: 3, color: "#0f2a1d" }}
+              >
+                Order Preview
+              </Typography>
+              <Box
+                sx={{ mb: 3, p: 2, bgcolor: "#f9f9f9", borderRadius: "8px" }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Delivering to:
+                </Typography>
+                <Typography variant="body1" fontWeight="bold">
+                  {selectedAddress.fullName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedAddress.address}, {selectedAddress.city}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
+                <Typography color="text.secondary">
+                  Items ({cartItems ? cartItems.length : 0}):
+                </Typography>
+                <Typography fontWeight="bold">
+                  ₦{total.toLocaleString()}
+                </Typography>
+              </Box>
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+              >
+                <Typography color="text.secondary">Delivery Fee:</Typography>
+                <Typography fontWeight="bold" color="success.main">
+                  Free
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 3,
+                }}
+              >
+                <Typography variant="h6" fontWeight="bold">
+                  Total to Pay:
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color="#0f2a1d">
+                  ₦{total.toLocaleString()}
+                </Typography>
+              </Box>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handlePayment}
+                disabled={loading}
+                sx={{
+                  bgcolor: "#0f2a1d",
+                  py: 1.5,
+                  borderRadius: "30px",
+                  fontSize: "1.1rem",
+                  fontWeight: "bold",
+                  "&:hover": { bgcolor: "#144430" },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  `Place Order`
+                )}
+              </Button>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
+  );
 };
 
 export default PaymentPage;
