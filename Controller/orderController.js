@@ -1,7 +1,4 @@
 const Order = require("../Models/orderModel");
-
-// Unified Create Order Function
-// Handles both "Pay Now" (Paystack) and "Pay on Delivery"
 const addOrderItems = async (req, res) => {
   try {
     const {
@@ -11,7 +8,6 @@ const addOrderItems = async (req, res) => {
       itemsPrice,
       shippingPrice,
       totalPrice,
-      // These will be present if Frontend already processed payment (Card)
       isPaid,
       paidAt,
       paymentResult,
@@ -21,15 +17,14 @@ const addOrderItems = async (req, res) => {
       return res.status(400).json({ message: "No order items" });
     }
 
-    // Handle different user ID structures in token
-    const userId = req.user._id || req.user.userId;
+    const userId = req.user && (req.user._id || req.user.userId);
+
     if (!userId) {
       return res
         .status(401)
         .json({ message: "User not authorized. Token missing userId." });
     }
 
-    // Create the order
     const order = new Order({
       orderItems,
       user: userId,
@@ -38,15 +33,13 @@ const addOrderItems = async (req, res) => {
       itemsPrice,
       shippingPrice,
       totalPrice,
-      // If frontend says it's paid, save as Paid. Otherwise default to false.
       isPaid: isPaid === true,
-      paidAt: isPaid ? (paidAt || Date.now()) : null,
+      paidAt: isPaid ? paidAt || Date.now() : null,
       paymentResult: paymentResult || null,
     });
 
     const createdOrder = await order.save();
     res.status(201).json(createdOrder);
-    
   } catch (error) {
     console.log("Order Controller Error:", error);
     res.status(500).json({ message: error.message });
@@ -70,7 +63,6 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// This is still useful if a user pays LATER (e.g. they chose COD then changed mind)
 const updateOrderToPaid = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -79,10 +71,13 @@ const updateOrderToPaid = async (req, res) => {
       order.isPaid = true;
       order.paidAt = Date.now();
       order.paymentResult = {
-        id: req.body.id,
-        status: req.body.status,
-        update_time: req.body.update_time,
-        email_address: req.body.email_address,
+        id: req.body.id || req.body.paymentResult?.id,
+        status: req.body.status || req.body.paymentResult?.status,
+        update_time:
+          req.body.update_time || req.body.paymentResult?.update_time,
+        email_address:
+          req.body.email_address || req.body.paymentResult?.email_address,
+        provider: "Paystack",
       };
 
       const updatedOrder = await order.save();

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@paystack/inline-js": "^2.22.7",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cloudinary": "^2.8.0",
