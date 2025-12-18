@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -13,71 +13,38 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
-  CircularProgress,
   Alert,
 } from "@mui/material";
 
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { createOrder } from "../../Actions/order.actions";
-import { orderConstants } from "../../Actions/constant";
 
 const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
   const { selectedAddress, total } = location.state || {};
-
   const { cartItems } = useSelector((state) => state.cart);
-  const orderCreate = useSelector((state) => state.orderCreate);
-  const { loading, success, error, order } = orderCreate;
 
   const [paymentMethod, setPaymentMethod] = useState("Card");
-
   useEffect(() => {
     if (!selectedAddress || !cartItems || cartItems.length === 0) {
       navigate("/cart");
     }
   }, [selectedAddress, cartItems, navigate]);
 
-  useEffect(() => {
-    if (success) {
-      dispatch({ type: orderConstants.ORDER_CREATE_RESET });
-      navigate(`/order/${order._id}`);
-    }
-  }, [navigate, success, order, dispatch]);
-
-  const handlePayment = () => {
+  const handleContinue = () => {
     if (!selectedAddress) {
       alert("Address is missing. Please go back and select an address.");
       return;
     }
-    console.log("Original Cart Items:", cartItems);
-
-    const mappedOrderItems = cartItems.map((item) => {
-      return {
-        product: item._id || item.product,
-        title: item.name || item.title || "Unknown Item",
-        image: item.img || item.image || "https://via.placeholder.com/150",
-        price: item.price,
-        qty: item.qty || item.quantity || 1,
-      };
+    navigate("/place-order", {
+      state: {
+        selectedAddress,
+        total,
+        paymentMethod,
+      },
     });
-
-    console.log("Mapped Items to Send:", mappedOrderItems);
-
-    const orderData = {
-      orderItems: mappedOrderItems,
-      shippingAddress: selectedAddress,
-      paymentMethod: paymentMethod,
-      itemsPrice: total,
-      shippingPrice: 0,
-      taxPrice: 0,
-      totalPrice: total,
-    };
-
-    dispatch(createOrder(orderData));
   };
 
   if (!selectedAddress) return null;
@@ -127,12 +94,6 @@ const PaymentPage = () => {
           Payment Method
         </Typography>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
         <Grid container spacing={4}>
           <Grid item xs={12} md={8}>
             <Card elevation={3} sx={{ borderRadius: "12px", mb: 3 }}>
@@ -181,13 +142,12 @@ const PaymentPage = () => {
                           >
                             <CreditCardIcon sx={{ color: "#0f2a1d" }} />
                             <Typography fontWeight="bold">
-                              Pay with Card
+                              Pay with Card (Paystack)
                             </Typography>
                           </Box>
                         }
                       />
                     </Box>
-
                     <Box
                       onClick={() => setPaymentMethod("POD")}
                       sx={{
@@ -291,17 +251,17 @@ const PaymentPage = () => {
                 }}
               >
                 <Typography variant="h6" fontWeight="bold">
-                  Total to Pay:
+                  Total:
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" color="#0f2a1d">
                   ₦{total.toLocaleString()}
                 </Typography>
               </Box>
+
               <Button
                 fullWidth
                 variant="contained"
-                onClick={handlePayment}
-                disabled={loading}
+                onClick={handleContinue}
                 sx={{
                   bgcolor: "#0f2a1d",
                   py: 1.5,
@@ -311,11 +271,7 @@ const PaymentPage = () => {
                   "&:hover": { bgcolor: "#144430" },
                 }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  `Place Order`
-                )}
+                Continue to Confirm
               </Button>
             </Card>
           </Grid>

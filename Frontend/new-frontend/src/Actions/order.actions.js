@@ -50,27 +50,27 @@ export const getOrderDetails = (id) => {
   };
 };
 
-export const payOrder = (orderId, paymentResult) => {
-  return async (dispatch) => {
-    try {
-      dispatch({ type: orderConstants.ORDER_PAY_REQUEST });
+export const payOrder = (orderId, paymentResult) => async (dispatch) => {
+  try {
+    dispatch({ type: "ORDER_PAY_REQUEST" });
 
-      const res = await axios.put(`/order/${orderId}/pay`, paymentResult);
+    const { data } = await axios.put(
+      `/order/${orderId}/pay`, 
+      paymentResult
+    );
 
-      dispatch({
-        type: orderConstants.ORDER_PAY_SUCCESS,
-        payload: res.data,
-      });
-    } catch (error) {
-      dispatch({
-        type: orderConstants.ORDER_PAY_FAILURE,
-        payload:
-          error.response && error.response.data.message
-            ? error.response.data.message
-            : error.message,
-      });
-    }
-  };
+    dispatch({ type: "ORDER_PAY_SUCCESS", payload: data });
+    
+    dispatch(getOrderDetails(orderId));
+    
+  } catch (error) {
+    dispatch({
+      type: "ORDER_PAY_FAIL",
+      payload: error.response && error.response.data.message 
+        ? error.response.data.message 
+        : error.message,
+    });
+  }
 };
 
 export const listMyOrders = () => {

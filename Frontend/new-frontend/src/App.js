@@ -15,6 +15,7 @@ import AddressPage from "./Container/AddressPage";
 import PaymentPage from "./Container/PaymentPage";
 import ManageAddressPage from "./Container/ManageAddress";
 import OrderPage from "./Container/OrderPage";
+import PlaceOrderPage from "./Container/PlaceOrderPage"; 
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
             <Route path="/address" element={<AddressPage/>} />
             <Route path="/manageAddress" element={<ManageAddressPage/>} />
             <Route path="/payment" element={<PaymentPage/>} />
+            <Route path="/place-order" element={<PlaceOrderPage />} />
             <Route path="/order/:id" element={<OrderPage />} />
           </Route>
         </Routes>
