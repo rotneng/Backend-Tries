@@ -9,6 +9,7 @@ import {
   Paper,
   CircularProgress,
   IconButton,
+  Chip,
 } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -45,7 +46,9 @@ const ProductDetails = () => {
   }, [id, products, dispatch]);
 
   const handleIncreaseQty = () => {
-    setQty((prev) => prev + 1);
+    if (product && qty < product.stock) {
+      setQty((prev) => prev + 1);
+    }
   };
 
   const handleDecreaseQty = () => {
@@ -56,6 +59,11 @@ const ProductDetails = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    if (qty > product.stock) {
+      alert("Cannot add more items than available in stock");
+      return;
+    }
 
     dispatch(addItemToCart(product, qty));
     alert(`Added ${qty} ${product.title} to cart`);
@@ -140,6 +148,23 @@ const ProductDetails = () => {
             >
               ₦{product.price.toLocaleString()}
             </Typography>
+            <Box sx={{ mb: 2 }}>
+              {product.stock > 0 ? (
+                <Chip
+                  label={`In Stock: ${product.stock}`}
+                  color="success"
+                  variant="outlined"
+                  sx={{ fontWeight: "bold" }}
+                />
+              ) : (
+                <Chip
+                  label="Out of Stock"
+                  color="error"
+                  variant="filled"
+                  sx={{ fontWeight: "bold" }}
+                />
+              )}
+            </Box>
 
             <Typography
               sx={{
@@ -169,10 +194,15 @@ const ProductDetails = () => {
                   <IconButton onClick={handleDecreaseQty} disabled={qty <= 1}>
                     <RemoveIcon />
                   </IconButton>
+
                   <Typography sx={{ mx: 2, fontWeight: "bold" }}>
                     {qty}
                   </Typography>
-                  <IconButton onClick={handleIncreaseQty}>
+
+                  <IconButton
+                    onClick={handleIncreaseQty}
+                    disabled={qty >= product.stock}
+                  >
                     <AddIcon />
                   </IconButton>
                 </Box>
@@ -197,14 +227,16 @@ const ProductDetails = () => {
                 startIcon={<ShoppingCartIcon />}
                 onClick={handleAddToCart}
                 fullWidth
+                disabled={product.stock === 0}
                 sx={{
                   bgcolor: "#0f2a1d",
                   py: 1.5,
                   borderRadius: "30px",
                   "&:hover": { bgcolor: "#144430" },
+                  "&:disabled": { bgcolor: "#ccc" },
                 }}
               >
-                Add to Cart
+                {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
               </Button>
             )}
           </Grid>

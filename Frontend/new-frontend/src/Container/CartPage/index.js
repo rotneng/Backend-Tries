@@ -28,22 +28,41 @@ import {
   removeCartItem,
 } from "../../Actions/cartActions";
 
+import { getProducts } from "../../Actions/product.actions";
+
 const CartPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
   const { cartItems, updatingCart } = useSelector((state) => state.cart);
+  const { products } = useSelector((state) => state.product);
+
   const token = localStorage.getItem("token");
   const { orderSuccess, orderId } = location.state || {};
 
   useEffect(() => {
     dispatch(getCartItems());
-  }, [dispatch]);
+    if (!products || products.length === 0) {
+      dispatch(getProducts());
+    }
+  }, [dispatch, products]);
 
   const onQuantityIncrement = (id) => {
     const item = cartItems.find((x) => x._id === id);
-    if (item) dispatch(addItemToCart(item, 1));
+    if (!item) return;
+
+    const productId = item.product?._id || item.product || item._id;
+    const realProduct = products.find((p) => p._id === productId);
+
+    const availableStock = realProduct ? realProduct.stock : item.stock;
+
+    if (availableStock !== undefined && item.qty >= availableStock) {
+      alert(`Sorry, only ${availableStock} items left in stock.`);
+      return;
+    }
+
+    dispatch(addItemToCart(item, 1));
   };
 
   const onQuantityDecrement = (id) => {
@@ -69,6 +88,7 @@ const CartPage = () => {
     cartItems && Array.isArray(cartItems)
       ? cartItems.reduce((acc, item) => acc + item.qty * item.price, 0)
       : 0;
+
   if (orderSuccess) {
     return (
       <Box
@@ -217,100 +237,132 @@ const CartPage = () => {
 
       <Grid container spacing={{ xs: 2, md: 4 }}>
         <Grid item xs={12} md={8}>
-          {cartItems.map((item) => (
-            <Card
-              key={item._id}
-              elevation={3}
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                mb: 2,
-                p: 2,
-                alignItems: "center",
-                borderRadius: "12px",
-                textAlign: { xs: "center", sm: "left" },
-              }}
-            >
-              <CardMedia
-                component="img"
-                sx={{
-                  width: { xs: 120, sm: 100 },
-                  height: { xs: 120, sm: 100 },
-                  objectFit: "contain",
-                  borderRadius: "8px",
-                  mb: { xs: 2, sm: 0 },
-                }}
-                image={item.image || "https://via.placeholder.com/100"}
-                alt={item.title}
-              />
+          {cartItems.map((item) => {
+            const productId = item.product?._id || item.product || item._id;
+            const realProduct = products.find((p) => p._id === productId);
+            const stockLimit = realProduct ? realProduct.stock : item.stock;
+            const isMaxedOut =
+              stockLimit !== undefined && item.qty >= stockLimit;
 
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  ml: { xs: 0, sm: 2 },
-                  mb: { xs: 2, sm: 0 },
-                  width: { xs: "100%", sm: "auto" },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-                >
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {item.category}
-                </Typography>
-                <Typography color="green" fontWeight="bold" sx={{ mt: 0.5 }}>
-                  ₦{item.price ? item.price.toLocaleString() : 0}
-                </Typography>
-              </Box>
-
-              <Box
+            return (
+              <Card
+                key={item._id}
+                elevation={3}
                 sx={{
                   display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  mb: 2,
+                  p: 2,
                   alignItems: "center",
-                  width: { xs: "100%", sm: "auto" },
-                  justifyContent: { xs: "center", sm: "flex-end" },
+                  borderRadius: "12px",
+                  textAlign: { xs: "center", sm: "left" },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", mr: 3 }}>
-                  <IconButton
-                    onClick={() => onQuantityDecrement(item._id)}
-                    disabled={item.qty <= 1 || updatingCart}
-                    sx={{ border: "1px solid #ddd", width: 30, height: 30 }}
-                  >
-                    <RemoveIcon fontSize="small" />
-                  </IconButton>
-                  <Typography sx={{ mx: 2, fontWeight: "bold" }}>
-                    {item.qty}
-                  </Typography>
-                  <IconButton
-                    onClick={() => onQuantityIncrement(item._id)}
-                    disabled={updatingCart}
+                <CardMedia
+                  component="img"
+                  onClick={() => navigate(`/product/${productId}`)}
+                  sx={{
+                    width: { xs: 120, sm: 100 },
+                    height: { xs: 120, sm: 100 },
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                    mb: { xs: 2, sm: 0 },
+                    cursor: "pointer",
+                    "&:hover": { opacity: 0.8 },
+                  }}
+                  image={item.image || "https://via.placeholder.com/100"}
+                  alt={item.title}
+                />
+
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    ml: { xs: 0, sm: 2 },
+                    mb: { xs: 2, sm: 0 },
+                    width: { xs: "100%", sm: "auto" },
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    onClick={() => navigate(`/product/${productId}`)}
                     sx={{
-                      border: "1px solid #0f2a1d",
-                      width: 30,
-                      height: 30,
-                      color: "white",
-                      bgcolor: "#0f2a1d",
-                      "&:hover": { bgcolor: "#144430" },
+                      fontSize: { xs: "1rem", sm: "1.25rem" },
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#0f2a1d",
+                        textDecoration: "underline",
+                      },
                     }}
                   >
-                    <AddIcon fontSize="small" />
-                  </IconButton>
+                    {item.title}
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    {item.category}
+                  </Typography>
+                  <Typography color="green" fontWeight="bold" sx={{ mt: 0.5 }}>
+                    ₦{item.price ? item.price.toLocaleString() : 0}
+                  </Typography>
+
+                  {isMaxedOut && (
+                    <Typography
+                      variant="caption"
+                      color="error"
+                      sx={{ display: "block", mt: 0.5 }}
+                    >
+                      Max stock reached ({stockLimit})
+                    </Typography>
+                  )}
                 </Box>
 
-                <IconButton
-                  color="error"
-                  onClick={() => onRemoveCartItem(item._id)}
-                  disabled={updatingCart}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: { xs: "100%", sm: "auto" },
+                    justifyContent: { xs: "center", sm: "flex-end" },
+                  }}
                 >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </Card>
-          ))}
+                  <Box sx={{ display: "flex", alignItems: "center", mr: 3 }}>
+                    <IconButton
+                      onClick={() => onQuantityDecrement(item._id)}
+                      disabled={item.qty <= 1 || updatingCart}
+                      sx={{ border: "1px solid #ddd", width: 30, height: 30 }}
+                    >
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <Typography sx={{ mx: 2, fontWeight: "bold" }}>
+                      {item.qty}
+                    </Typography>
+
+                    <IconButton
+                      onClick={() => onQuantityIncrement(item._id)}
+                      disabled={updatingCart || isMaxedOut}
+                      sx={{
+                        border: "1px solid #0f2a1d",
+                        width: 30,
+                        height: 30,
+                        color: "white",
+                        bgcolor: "#0f2a1d",
+                        "&:hover": { bgcolor: "#144430" },
+                        "&:disabled": { bgcolor: "#ccc", borderColor: "#ccc" },
+                      }}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+
+                  <IconButton
+                    color="error"
+                    onClick={() => onRemoveCartItem(item._id)}
+                    disabled={updatingCart}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              </Card>
+            );
+          })}
         </Grid>
 
         <Grid item xs={12} md={4}>

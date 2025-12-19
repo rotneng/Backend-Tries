@@ -15,9 +15,10 @@ import AddressPage from "./Container/AddressPage";
 import PaymentPage from "./Container/PaymentPage";
 import ManageAddressPage from "./Container/ManageAddress";
 import OrderPage from "./Container/OrderPage";
-import PlaceOrderPage from "./Container/PlaceOrderPage"; 
+import PlaceOrderPage from "./Container/PlaceOrderPage";
 import TrackOrderPage from "./Container/TrackOrderPage";
 import AdminOrdersPage from "./Container/AdminOrderPage";
+import MyOrdersPage from "./Container/MyOdersPage";
 
 function App() {
   return (
@@ -36,11 +37,16 @@ function App() {
             <Route path="/addproducts" element={<AddProducts />} />
             <Route path="/admin/orders" element={<AdminOrdersPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/address" element={<AddressPage/>} />
-            <Route path="/manageAddress" element={<ManageAddressPage/>} />
-            <Route path="/payment" element={<PaymentPage/>} />
+            <Route path="/address" element={<AddressPage />} />
+            <Route path="/manageAddress" element={<ManageAddressPage />} />
+            <Route path="/payment" element={<PaymentPage />} />
             <Route path="/place-order" element={<PlaceOrderPage />} />
             <Route path="/order/:id" element={<OrderPage />} />
+            <Route
+              path="/account/orders/track-order/:id"
+              element={<TrackOrderPage />}
+            />
+            <Route path="/account/orders" element={<MyOrdersPage />} />
             <Route path="/track-order/:id" element={<TrackOrderPage />} />
           </Route>
         </Routes>

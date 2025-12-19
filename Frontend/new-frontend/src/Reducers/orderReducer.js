@@ -17,14 +17,17 @@ export const orderCreateReducer = (state = {}, action) => {
 };
 
 export const orderDetailsReducer = (
-  state = { loading: true, orderItems: [], shippingAddress: {} },
+  state = { loading: true, order: {}, shippingAddress: {} },
   action
 ) => {
   switch (action.type) {
     case orderConstants.GET_ORDER_DETAILS_REQUEST:
       return { ...state, loading: true };
     case orderConstants.GET_ORDER_DETAILS_SUCCESS:
-      return { loading: false, order: action.payload };
+      return {
+        loading: false,
+        order: action.payload.order || action.payload,
+      };
     case orderConstants.GET_ORDER_DETAILS_FAILURE:
       return { loading: false, error: action.payload };
     default:
@@ -56,7 +59,10 @@ export const orderListMyReducer = (state = { orders: [] }, action) => {
     case orderConstants.ORDER_MY_LIST_REQUEST:
       return { loading: true };
     case orderConstants.ORDER_MY_LIST_SUCCESS:
-      return { loading: false, orders: action.payload };
+      return {
+        loading: false,
+        orders: action.payload.orders || action.payload,
+      };
     case orderConstants.ORDER_MY_LIST_FAILURE:
     case orderConstants.ORDER_MY_LIST_FAIL:
       return { loading: false, error: action.payload };
@@ -78,6 +84,21 @@ export const orderListReducer = (state = { orders: [] }, action) => {
       };
     case "ORDER_LIST_FAIL":
       return { loading: false, error: action.payload };
+    default:
+      return state;
+  }
+};
+
+export const orderUpdateReducer = (state = {}, action) => {
+  switch (action.type) {
+    case orderConstants.UPDATE_CUSTOMER_ORDER_REQUEST:
+      return { loading: true };
+    case orderConstants.UPDATE_CUSTOMER_ORDER_SUCCESS:
+      return { loading: false, success: true };
+    case orderConstants.UPDATE_CUSTOMER_ORDER_FAILURE:
+      return { loading: false, error: action.payload };
+    case orderConstants.UPDATE_CUSTOMER_ORDER_RESET:
+      return {};
     default:
       return state;
   }

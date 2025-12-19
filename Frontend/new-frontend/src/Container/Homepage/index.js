@@ -21,7 +21,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import InfoIcon from "@mui/icons-material/Info";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import ListAltIcon from "@mui/icons-material/ListAlt"; 
+import ListAltIcon from "@mui/icons-material/ListAlt";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getProducts, deleteProduct } from "../../Actions/product.actions";
@@ -154,10 +156,8 @@ const Homepage = () => {
             </Tooltip>
           )}
 
-          {/* ADMIN BUTTONS */}
           {isAdmin && (
             <>
-              {/* NEW: View Orders Button */}
               <Tooltip title="View Customer Orders">
                 <IconButton
                   onClick={() => navigate("/admin/orders")}
@@ -179,14 +179,27 @@ const Homepage = () => {
           )}
 
           {!isAdmin && (
-            <Tooltip title="View Cart">
-              <IconButton
-                onClick={() => navigate("/cart")}
-                style={{ color: "white" }}
-              >
-                <ShoppingCartIcon />
-              </IconButton>
-            </Tooltip>
+            <>
+              {token && (
+                <Tooltip title="My Orders & Tracking">
+                  <IconButton
+                    onClick={() => navigate("/account/orders")}
+                    sx={{ color: "white" }}
+                  >
+                    <LocalShippingIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              <Tooltip title="View Cart">
+                <IconButton
+                  onClick={() => navigate("/cart")}
+                  style={{ color: "white" }}
+                >
+                  <ShoppingCartIcon />
+                </IconButton>
+              </Tooltip>
+            </>
           )}
 
           {token ? (

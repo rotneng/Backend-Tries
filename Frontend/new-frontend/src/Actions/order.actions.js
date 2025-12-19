@@ -5,27 +5,28 @@ export const createOrder = (order) => {
   return async (dispatch) => {
     dispatch({ type: orderConstants.ORDER_CREATE_REQUEST });
     try {
-      console.log("👉 Sending Order to Backend:", order); // DEBUG LOG 1
+      console.log("👉 Sending Order to Backend:", order);
       const res = await axios.post("/order", order);
 
-      console.log("✅ Backend Response:", res); // DEBUG LOG 2
+      console.log("✅ Backend Response:", res);
       if (res.status === 201) {
         dispatch({
           type: orderConstants.ORDER_CREATE_SUCCESS,
           payload: res.data,
         });
-        // OPTIONAL: Clear cart immediately in Redux
         dispatch({ type: cartConstants.RESET_CART });
       }
     } catch (error) {
-      // DEBUG LOG 3: This reveals the REAL error
-      console.error("❌ ORDER SAVE FAILED:", error.response ? error.response.data : error);
-      
+      console.error(
+        "❌ ORDER SAVE FAILED:",
+        error.response ? error.response.data : error
+      );
       dispatch({
         type: orderConstants.ORDER_CREATE_FAILURE,
-        payload: error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+        payload:
+          error.response && error.response.data.message
+            ? error.response.data.message
+            : error.message,
       });
     }
   };
@@ -37,11 +38,11 @@ export const createOrderAfterPayment = (paymentResult, orderData) => {
       dispatch({ type: orderConstants.ORDER_CREATE_REQUEST });
 
       const payload = {
-        ...orderData, 
-        paymentResult, 
+        ...orderData,
+        paymentResult,
         isPaid: true,
         paidAt: Date.now(),
-        paymentMethod: "Card", 
+        paymentMethod: "Card",
       };
 
       const res = await axios.post("/order/create-after-payment", payload);
@@ -51,8 +52,7 @@ export const createOrderAfterPayment = (paymentResult, orderData) => {
           type: orderConstants.ORDER_CREATE_SUCCESS,
           payload: res.data,
         });
-      
-        dispatch({ type: cartConstants.RESET_CART }); 
+        dispatch({ type: cartConstants.RESET_CART });
       }
     } catch (error) {
       console.log("Create Order After Payment Error:", error);
@@ -133,32 +133,62 @@ export const listMyOrders = () => {
   };
 };
 
-export const getAllOrders = () => async (dispatch, getState) => {
-  try {
-    dispatch({ type: "ORDER_LIST_REQUEST" });
+export const getAllOrders = () => {
+  return async (dispatch) => {
+    try {
+      dispatch({ type: "ORDER_LIST_REQUEST" });
 
-    const {
-      auth: { token },
-    } = getState();
+      const res = await axios.get("/order");
 
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-    const { data } = await axios.get("http://localhost:3000/order", config);
+      dispatch({
+        type: "ORDER_LIST_SUCCESS",
+        payload: res.data.orders || res.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "ORDER_LIST_FAIL",
+        payload:
+          error.response && error.response.data.message
+            ? error.response.data.message
+            : error.message,
+      });
+    }
+  };
+};
 
-    dispatch({
-      type: "ORDER_LIST_SUCCESS",
-      payload: data,
-    });
-  } catch (error) {
-    dispatch({
-      type: "ORDER_LIST_FAIL",
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
-    });
-  }
+export const updateOrder = (payload) => {
+  return async (dispatch) => {
+    dispatch({ type: orderConstants.UPDATE_CUSTOMER_ORDER_REQUEST });
+    try {
+      const res = await axios.post("/order/update", payload);
+
+      if (res.status === 201) {
+        dispatch({ type: orderConstants.UPDATE_CUSTOMER_ORDER_SUCCESS });
+        dispatch(getAllOrders());
+      }
+    } catch (error) {}
+  };
+};
+
+export const confirmDelivery = (orderId) => {
+  return async (dispatch) => {
+    try {
+      dispatch({ type: orderConstants.UPDATE_CUSTOMER_ORDER_REQUEST });
+
+      const res = await axios.put(`/order/${orderId}/confirm-delivery`);
+
+      if (res.status === 200) {
+        dispatch({ type: orderConstants.UPDATE_CUSTOMER_ORDER_SUCCESS });
+        dispatch(getOrderDetails(orderId));
+      }
+    } catch (error) {
+      dispatch({
+        type: orderConstants.UPDATE_CUSTOMER_ORDER_FAILURE,
+        payload:
+          error.response && error.response.data.message
+            ? error.response.data.message
+            : error.message,
+      });
+    }
+  };
 };

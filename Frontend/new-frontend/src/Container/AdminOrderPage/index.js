@@ -1,114 +1,175 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { getAllOrders, updateOrder } from "../../Actions/order.actions";
 import {
   Box,
+  Container,
   Typography,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Button,
+  Select,
+  MenuItem,
+  FormControl,
   Chip,
   CircularProgress,
-  Container,
-  Alert,
 } from "@mui/material";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import { getAllOrders } from "../../Actions/order.actions"; 
 
 const AdminOrdersPage = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const orderList = useSelector((state) => state.orderList);
-  const { loading, error, orders } = orderList || {};
-  const authState = useSelector((state) => state.auth);
-  const currentUser = authState.user || authState.userInfo; 
+
+  const orderList = useSelector((state) => state.orderList || {});
+  const { orders, loading } = orderList;
 
   useEffect(() => {
-    if (currentUser && currentUser.role === "admin") {
-      dispatch(getAllOrders());
-    } else if (!currentUser) {
-      navigate("/signIn");
-    }
-  }, [dispatch, navigate, currentUser]);
+    dispatch(getAllOrders());
+  }, [dispatch]);
 
-  const customerOrders = orders
-    ? orders.filter((order) => order.user && order.user.role !== "admin")
-    : [];
+  const onStatusChange = (orderId, newStatus) => {
+    const payload = {
+      orderId: orderId,
+      type: newStatus,
+    };
+    dispatch(updateOrder(payload));
+  };
 
   return (
-    <Box sx={{ backgroundColor: "#f4f4f4", minHeight: "100vh", py: 4 }}>
-      <Container maxWidth="lg">
-        <Typography variant="h4" fontWeight="bold" sx={{ mb: 4, color: "#0f2a1d" }}>
-          Customer Orders
-        </Typography>
+    <Container maxWidth="lg" sx={{ mt: 5, mb: 5 }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom>
+        Manage Orders
+      </Typography>
 
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
-            <CircularProgress sx={{ color: "#0f2a1d" }} />
-          </Box>
-        ) : error ? (
-          <Alert severity="error">{error}</Alert>
-        ) : (
-          <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2 }}>
-            <Table sx={{ minWidth: 650 }}>
-              <TableHead sx={{ backgroundColor: "#0f2a1d" }}>
-                <TableRow>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>ID</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>User</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Date</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Total</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Paid</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Delivered</TableCell>
-                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {customerOrders.map((order) => (
-                  <TableRow key={order._id}>
-                    <TableCell>{order._id.substring(0, 10)}...</TableCell>
-                    <TableCell>{order.user ? order.user.firstName : "Deleted User"}</TableCell>
-                    <TableCell>{order.createdAt ? order.createdAt.substring(0, 10) : "N/A"}</TableCell>
-                    <TableCell>₦{order.totalPrice ? order.totalPrice.toLocaleString() : 0}</TableCell>
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={5}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer
+          component={Paper}
+          sx={{ boxShadow: 3, borderRadius: 2 }}
+        >
+          <Table>
+            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+              <TableRow>
+                <TableCell>
+                  <strong>ID</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Customer</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Items</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Amount</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Payment</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Current Status</strong>
+                </TableCell>
+                <TableCell align="center">
+                  <strong>Action (Update)</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders && orders.length > 0 ? (
+                orders.map((order) => (
+                  <TableRow key={order._id} hover>
+                    <TableCell>{order._id.substring(0, 6)}...</TableCell>
+                    <TableCell>
+                      {order.user ? order.user.firstName : "Deleted"}
+                    </TableCell>
+                    <TableCell>{order.orderItems.length} Items</TableCell>
+                    <TableCell fontWeight="bold">
+                      ₦
+                      {(order.totalAmount || order.totalPrice).toLocaleString()}
+                    </TableCell>
+
                     <TableCell>
                       {order.isPaid ? (
-                        <Chip icon={<CheckIcon style={{ color: "white" }} />} label="Paid" sx={{ bgcolor: "#2e7d32", color: "white" }} size="small" />
+                        <Chip
+                          label="Paid"
+                          color="success"
+                          size="small"
+                          variant="filled"
+                        />
+                      ) : order.paymentMethod === "COD" ||
+                        order.paymentMethod === "Pay on Delivery" ? (
+                        <Chip
+                          label="Pay on Delivery"
+                          color="warning"
+                          size="small"
+                          variant="outlined"
+                        />
                       ) : (
-                        <Chip icon={<CloseIcon style={{ color: "white" }} />} label="Not Paid" sx={{ bgcolor: "#d32f2f", color: "white" }} size="small" />
+                        <Chip
+                          label="Unpaid"
+                          color="error"
+                          size="small"
+                          variant="outlined"
+                        />
                       )}
                     </TableCell>
+
                     <TableCell>
-                      {order.isDelivered ? (
-                        <Chip icon={<CheckIcon style={{ color: "white" }} />} label="Delivered" sx={{ bgcolor: "#2e7d32", color: "white" }} size="small" />
-                      ) : (
-                        <Chip icon={<CloseIcon style={{ color: "white" }} />} label="Pending" sx={{ bgcolor: "#ed6c02", color: "white" }} size="small" />
-                      )}
+                      <Chip
+                        label={order.orderStatus.toUpperCase()}
+                        color={
+                          order.orderStatus === "delivered"
+                            ? "success"
+                            : order.orderStatus === "shipped"
+                            ? "info"
+                            : order.orderStatus === "packed"
+                            ? "secondary"
+                            : "default"
+                        }
+                        size="small"
+                      />
                     </TableCell>
-                    <TableCell>
-                      <Button variant="outlined" size="small" onClick={() => navigate(`/order/${order._id}`)}>
-                        Details
-                      </Button>
+
+                    <TableCell align="center">
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <Select
+                          value={order.orderStatus}
+                          onChange={(e) =>
+                            onStatusChange(order._id, e.target.value)
+                          }
+                          sx={{
+                            backgroundColor: "#fff",
+                            fontSize: "14px",
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              border: "1px solid green",
+                            },
+                          }}
+                        >
+                          <MenuItem value="ordered">Ordered</MenuItem>
+                          <MenuItem value="packed">Packed</MenuItem>
+                          <MenuItem value="shipped">Shipped</MenuItem>
+                          <MenuItem value="delivered">Delivered</MenuItem>
+                        </Select>
+                      </FormControl>
                     </TableCell>
                   </TableRow>
-                ))}
-                {customerOrders.length === 0 && (
-                   <TableRow>
-                     <TableCell colSpan={7} align="center">
-                       <Typography sx={{ py: 3 }}>No customer orders found.</Typography>
-                     </TableCell>
-                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Container>
-    </Box>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    No orders found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Container>
   );
 };
 

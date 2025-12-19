@@ -42,6 +42,14 @@ const orderSchema = mongoose.Schema(
     totalPrice: { type: Number, required: true, default: 0.0 },
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
+
+    orderStatus: {
+      type: String,
+      required: true,
+      default: "ordered",
+      enum: ["ordered", "packed", "shipped", "delivered"],
+    },
+
     isDelivered: { type: Boolean, required: true, default: false },
     deliveredAt: { type: Date },
   },
