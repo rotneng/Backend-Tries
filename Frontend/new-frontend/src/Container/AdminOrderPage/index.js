@@ -248,7 +248,6 @@ const AdminOrdersPage = () => {
                 {[
                   "Order ID",
                   "Customer",
-                  "Items",
                   "Amount",
                   "Payment",
                   "Current Status",
@@ -307,40 +306,38 @@ const AdminOrdersPage = () => {
                               bgcolor: isIssue ? "error.main" : "#0f2a1d",
                             }}
                           >
-                            {order.user?.username ? (
-                              order.user.username.charAt(0)
-                            ) : (
-                              <PersonIcon fontSize="small" />
-                            )}
+                            {order.user?.username
+                              ? order.user.username.charAt(0).toUpperCase()
+                              : order.user?.firstName
+                              ? order.user.firstName.charAt(0)
+                              : "?"}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" fontWeight="500">
-                              {order.user
-                                ? `${order.user.username} ${
-                                    order.user.username || ""
-                                  }`
-                                : "Deleted User"}
+                            <Typography variant="body2" fontWeight="600">
+                              {order.user?.username
+                                ? `@${order.user.username}`
+                                : "No Username"}
                             </Typography>
 
-                            {order.user && (
-                              <Typography
-                                variant="caption"
-                                color="primary"
-                                sx={{
-                                  display: "block",
-                                  fontSize: "11px",
-                                  mt: -0.2,
-                                  maxWidth: "140px",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {order.user.username
-                                  ? `@${order.user.username}`
-                                  : order.user.email}
-                              </Typography>
-                            )}
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: "block",
+                                maxWidth: "140px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {order.user
+                                ? order.user.firstName
+                                  ? `${order.user.firstName} ${
+                                      order.user.lastName || ""
+                                    }`
+                                  : order.user.email
+                                : "Deleted User"}
+                            </Typography>
                           </Box>
                         </Stack>
                       </TableCell>

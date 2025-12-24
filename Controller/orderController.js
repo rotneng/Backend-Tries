@@ -61,7 +61,7 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
       "user",
-      "firstName lastName email"
+      "firstName lastName email username"
     );
 
     if (!order) {
@@ -142,7 +142,7 @@ const getMyOrders = async (req, res) => {
 const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
-      .populate("user", "id firstName email role")
+      .populate("user", "id firstName email role username")
       .sort({ createdAt: -1 });
 
     res.json(orders);
