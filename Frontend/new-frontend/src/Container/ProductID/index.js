@@ -55,29 +55,39 @@ const ProductDetails = () => {
     severity: "success",
   });
 
+  const [selectedImage, setSelectedImage] = useState("");
+
   useEffect(() => {
-    if (!product && !loading) {
+    if (!product) {
       dispatch(getProducts());
     }
-  }, [dispatch, id, product, loading]);
+  }, [dispatch, id, product]);
 
   useEffect(() => {
     if (product) {
-      console.log("Current Product Data:", product);
-      console.log("Quantity Field:", product.quantity);
-      console.log("Stock Field:", product.stock);
-      console.log("CountInStock Field:", product.countInStock);
+      if (product.images && product.images.length > 0) {
+        setSelectedImage(product.images[0]);
+      } else if (product.image) {
+        setSelectedImage(product.image);
+      } else {
+        setSelectedImage("https://placehold.co/600x600?text=No+Image");
+      }
     }
   }, [product]);
+
+  const getAllImages = () => {
+    if (!product) return [];
+    if (product.images && product.images.length > 0) return product.images;
+    if (product.image) return [product.image];
+    return [];
+  };
+
+  const productImages = getAllImages();
+
   const stockCount = product
     ? Number(product.quantity || product.countInStock || product.stock || 0)
     : 0;
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-    }).format(amount);
-  };
+
   const isOutOfStock = stockCount === 0;
 
   const stockLabel =
@@ -89,6 +99,13 @@ const ProductDetails = () => {
 
   const stockColor =
     stockCount > 10 ? "success" : stockCount > 0 ? "warning" : "error";
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    }).format(amount);
+  };
 
   const handleIncreaseQty = () => {
     if (product && qty < stockCount) {
@@ -111,7 +128,7 @@ const ProductDetails = () => {
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (stockCount === 0) {
+    if (isOutOfStock) {
       setToast({
         open: true,
         message: "This item is currently out of stock",
@@ -141,7 +158,7 @@ const ProductDetails = () => {
     setToast({ ...toast, open: false });
   };
 
-  if (loading) {
+  if (loading || !product) {
     return (
       <Box
         sx={{
@@ -152,19 +169,6 @@ const ProductDetails = () => {
         }}
       >
         <CircularProgress sx={{ color: "#0f2a1d" }} />
-      </Box>
-    );
-  }
-
-  if (!product) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 10 }}>
-        <Typography variant="h5" color="text.secondary">
-          Product not found
-        </Typography>
-        <Button onClick={() => navigate("/")} sx={{ mt: 2 }} variant="outlined">
-          Return Home
-        </Button>
       </Box>
     );
   }
@@ -191,14 +195,6 @@ const ProductDetails = () => {
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Home
           </Link>
-          <Link
-            component={RouterLink}
-            to="/"
-            color="inherit"
-            sx={{ textDecoration: "none", "&:hover": { color: "#0f2a1d" } }}
-          >
-            Shop
-          </Link>
           <Typography color="text.primary" fontWeight="500">
             {product.title}
           </Typography>
@@ -206,61 +202,111 @@ const ProductDetails = () => {
 
         <Grid container spacing={6}>
           <Grid item xs={12} md={6}>
-            <Paper
-              elevation={0}
-              sx={{
-                bgcolor: "#f8f9fa",
-                borderRadius: "24px",
-                height: { xs: "350px", md: "550px" },
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-                border: "1px solid #eee",
-                position: "relative",
-              }}
-            >
-              {isOutOfStock && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  bgcolor: "#f8f9fa",
+                  borderRadius: "24px",
+                  height: { xs: "350px", md: "500px" },
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  border: "1px solid #eee",
+                  position: "relative",
+                }}
+              >
+                {isOutOfStock && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      bgcolor: "rgba(255,255,255,0.6)",
+                      zIndex: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Chip
+                      label="SOLD OUT"
+                      color="error"
+                      sx={{
+                        fontSize: "1.5rem",
+                        fontWeight: "bold",
+                        py: 3,
+                        px: 2,
+                      }}
+                    />
+                  </Box>
+                )}
                 <Box
+                  component="img"
+                  src={selectedImage}
+                  alt={product.title}
+                  onError={(e) => {
+                    e.target.src = "https://placehold.co/600x600?text=No+Image";
+                  }}
                   sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    bgcolor: "rgba(255,255,255,0.6)",
-                    zIndex: 2,
-                    display: "flex",
-                    alignItems: "center",
+                    maxWidth: "95%",
+                    maxHeight: "95%",
+                    objectFit: "contain",
+                    transition: "transform 0.3s ease",
+                    filter: isOutOfStock ? "grayscale(100%)" : "none",
+                    "&:hover": { transform: "scale(1.05)" },
+                  }}
+                />
+              </Paper>
+
+              {productImages.length > 1 && (
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{
                     justifyContent: "center",
+                    overflowX: "auto",
+                    py: 1,
+                    px: 1,
                   }}
                 >
-                  <Chip
-                    label="SOLD OUT"
-                    color="error"
-                    sx={{
-                      fontSize: "1.5rem",
-                      fontWeight: "bold",
-                      py: 3,
-                      px: 2,
-                    }}
-                  />
-                </Box>
+                  {productImages.map((img, index) => (
+                    <Box
+                      key={index}
+                      onClick={() => setSelectedImage(img)}
+                      sx={{
+                        width: 70,
+                        height: 70,
+                        cursor: "pointer",
+                        borderRadius: "12px",
+                        border:
+                          selectedImage === img
+                            ? "2px solid #0f2a1d"
+                            : "1px solid #eee",
+                        overflow: "hidden",
+                        opacity: selectedImage === img ? 1 : 0.6,
+                        transition: "all 0.2s",
+                        flexShrink: 0,
+                        "&:hover": { opacity: 1, borderColor: "#0f2a1d" },
+                      }}
+                    >
+                      <img
+                        src={img}
+                        alt={`thumb-${index}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Stack>
               )}
-              <Box
-                component="img"
-                src={product.image || "https://via.placeholder.com/500"}
-                alt={product.title}
-                sx={{
-                  maxWidth: "90%",
-                  maxHeight: "90%",
-                  objectFit: "contain",
-                  transition: "transform 0.3s ease",
-                  filter: isOutOfStock ? "grayscale(100%)" : "none",
-                  "&:hover": { transform: "scale(1.05)" },
-                }}
-              />
-            </Paper>
+            </Box>
           </Grid>
 
           <Grid item xs={12} md={6}>
@@ -282,7 +328,8 @@ const ProductDetails = () => {
                   variant="filled"
                   sx={{ fontWeight: "bold", borderRadius: "8px" }}
                 />
-                {stockCount > 0 && (
+
+                {!isOutOfStock && !isAdmin && (
                   <Chip
                     label="Ready to Ship"
                     size="small"
@@ -303,18 +350,19 @@ const ProductDetails = () => {
               >
                 {product.title}
               </Typography>
-
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ mb: 3 }}
-              >
-                <Rating value={4.5} precision={0.5} readOnly size="small" />
-                <Typography variant="caption" color="text.secondary">
-                  (45 verified reviews)
-                </Typography>
-              </Stack>
+              {!isAdmin && (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{ mb: 3 }}
+                >
+                  <Rating value={4.5} precision={0.5} readOnly size="small" />
+                  <Typography variant="caption" color="text.secondary">
+                    (Verified Reviews)
+                  </Typography>
+                </Stack>
+              )}
 
               <Typography
                 variant="h4"
@@ -326,6 +374,7 @@ const ProductDetails = () => {
               </Typography>
 
               <Divider sx={{ mb: 3 }} />
+
               <Typography
                 variant="body1"
                 color="text.secondary"
@@ -348,10 +397,9 @@ const ProductDetails = () => {
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        border: "2px solid #e0e0e0",
+                        border: "1px solid #e0e0e0",
                         borderRadius: "50px",
                         p: "4px",
-                        width: "fit-content",
                         bgcolor: isOutOfStock ? "#f5f5f5" : "transparent",
                       }}
                     >
@@ -359,13 +407,12 @@ const ProductDetails = () => {
                         onClick={handleDecreaseQty}
                         disabled={qty <= 1 || isOutOfStock}
                         size="small"
-                        sx={{ bgcolor: "#f5f5f5" }}
                       >
                         <RemoveIcon fontSize="small" />
                       </IconButton>
                       <Typography
                         sx={{
-                          mx: 2.5,
+                          mx: 2,
                           fontWeight: "bold",
                           minWidth: "20px",
                           textAlign: "center",
@@ -379,18 +426,15 @@ const ProductDetails = () => {
                         disabled={isOutOfStock || qty >= stockCount}
                         size="small"
                         sx={{
-                          bgcolor: "#0f2a1d",
-                          color: "white",
+                          bgcolor: isOutOfStock ? "transparent" : "#0f2a1d",
+                          color: isOutOfStock ? "#999" : "white",
                           "&:hover": { bgcolor: "#144430" },
-                          "&.Mui-disabled": {
-                            bgcolor: "#e0e0e0",
-                            color: "#999",
-                          },
                         }}
                       >
                         <AddIcon fontSize="small" />
                       </IconButton>
                     </Box>
+
                     <Button
                       variant="contained"
                       size="large"
@@ -411,10 +455,6 @@ const ProductDetails = () => {
                         "&:hover": {
                           bgcolor: "#144430",
                           boxShadow: "0 10px 20px rgba(15, 42, 29, 0.3)",
-                        },
-                        "&.Mui-disabled": {
-                          bgcolor: "#e0e0e0",
-                          color: "#999",
                         },
                       }}
                     >
@@ -470,7 +510,6 @@ const ProductDetails = () => {
           </Grid>
         </Grid>
       </Container>
-
       <Snackbar
         open={toast.open}
         autoHideDuration={4000}

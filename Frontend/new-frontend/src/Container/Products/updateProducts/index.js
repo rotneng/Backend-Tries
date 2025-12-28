@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Box, TextField, Button, Typography, Paper, Grid } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Grid,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { getProducts, updateProduct } from "../../../Actions/product.actions"; 
+import DeleteIcon from "@mui/icons-material/Delete";
+import { getProducts, updateProduct } from "../../../Actions/product.actions";
 
 const UpdateProduct = () => {
   const { id } = useParams();
@@ -18,9 +28,12 @@ const UpdateProduct = () => {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [stock, setStock] = useState("");
+  const [sizes, setSizes] = useState("");
+  const [colors, setColors] = useState("");
 
-  const [currentImage, setCurrentImage] = useState("");
-  const [newImage, setNewImage] = useState(null);
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (products.length === 0) {
@@ -33,30 +46,68 @@ const UpdateProduct = () => {
         setPrice(productToEdit.price);
         setCategory(productToEdit.category);
         setStock(productToEdit.stock);
-        setCurrentImage(productToEdit.image);
+        setSizes(productToEdit.sizes || "");
+        setColors(productToEdit.colors || "");
+
+        if (productToEdit.images && productToEdit.images.length > 0) {
+          setExistingImages(productToEdit.images);
+        } else if (productToEdit.image) {
+          setExistingImages([productToEdit.image]);
+        } else {
+          setExistingImages([]);
+        }
       }
     }
   }, [id, products, dispatch]);
 
   const handleImageChange = (e) => {
-    setNewImage(e.target.files[0]);
+    const files = Array.from(e.target.files);
+
+    if (files.length > 0) {
+      const validFiles = files.filter((file) => file.type.startsWith("image/"));
+      setNewImages((prev) => [...prev, ...validFiles]);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const removeNewImage = (index) => {
+    setNewImages(newImages.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (indexToRemove) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    const form = new FormData();
-    form.append("title", title);
-    form.append("description", description);
-    form.append("price", price);
-    form.append("category", category);
-    form.append("stock", stock);
+    try {
+      const formData = new FormData();
 
-    if (newImage) {
-      form.append("image", newImage);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("category", category);
+      formData.append("stock", stock);
+      formData.append("sizes", sizes);
+      formData.append("colors", colors);
+
+      existingImages.forEach((url) => {
+        formData.append("existingImages", url);
+      });
+
+      if (newImages.length > 0) {
+        newImages.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
+
+      await dispatch(updateProduct(id, formData, navigate));
+    } catch (error) {
+      console.log("Update failed", error);
+    } finally {
+      setLoading(false);
     }
-
-    dispatch(updateProduct(id, form, navigate));
   };
 
   return (
@@ -66,9 +117,11 @@ const UpdateProduct = () => {
         width: { xs: "95%", sm: "80%", md: "600px" },
         maxWidth: "600px",
         margin: "0 auto",
+        bgcolor: "#f4f4f4",
+        minHeight: "100vh",
       }}
     >
-      <Paper elevation={3} sx={{ p: { xs: 3, md: 4 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 3, md: 4 }, borderRadius: 2 }}>
         <Typography
           variant="h4"
           fontWeight="bold"
@@ -90,6 +143,7 @@ const UpdateProduct = () => {
                 fullWidth
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 
@@ -100,6 +154,7 @@ const UpdateProduct = () => {
                 fullWidth
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -109,6 +164,7 @@ const UpdateProduct = () => {
                 fullWidth
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 
@@ -118,6 +174,26 @@ const UpdateProduct = () => {
                 fullWidth
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Sizes"
+                fullWidth
+                value={sizes}
+                onChange={(e) => setSizes(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Colors"
+                fullWidth
+                value={colors}
+                onChange={(e) => setColors(e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 
@@ -129,53 +205,144 @@ const UpdateProduct = () => {
                 fullWidth
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
 
-            <Grid item xs={12} textAlign="center">
+            <Grid item xs={12}>
               <Box
                 sx={{
                   border: "1px dashed #ccc",
                   p: 2,
                   borderRadius: 2,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
+                  bgcolor: "#fafafa",
                 }}
               >
                 <Typography
                   variant="subtitle2"
                   sx={{ mb: 1, color: "text.secondary" }}
                 >
-                  Current Image / Preview
+                  Current Images (Saved in Database)
                 </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
+                  {existingImages.length > 0 ? (
+                    existingImages.map((imgUrl, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          border: "1px solid #eee",
+                          borderRadius: 1,
+                          position: "relative",
+                        }}
+                      >
+                        <img
+                          src={imgUrl}
+                          alt="Current"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={() => removeExistingImage(index)}
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            bgcolor: "rgba(255,255,255,0.8)",
+                            p: "2px",
+                            "&:hover": { bgcolor: "white", color: "red" },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="caption" sx={{ fontStyle: "italic" }}>
+                      No existing images.
+                    </Typography>
+                  )}
+                </Box>
 
-                <img
-                  src={newImage ? URL.createObjectURL(newImage) : currentImage}
-                  alt="Preview"
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    objectFit: "contain",
-                    borderRadius: "8px",
-                    marginBottom: "15px",
-                    border: "1px solid #eee",
-                  }}
-                />
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mb: 1, color: "text.secondary" }}
+                >
+                  Add New Images
+                </Typography>
 
                 <Button
                   component="label"
                   variant="outlined"
                   startIcon={<CloudUploadIcon />}
+                  fullWidth
                   sx={{
                     color: "#0f2a1d",
                     borderColor: "#0f2a1d",
-                    "&:hover": { borderColor: "#144430", bgcolor: "#f0fdf4" },
+                    mb: 2,
+                    "&:hover": {
+                      borderColor: "#144430",
+                      bgcolor: "rgba(15, 42, 29, 0.04)",
+                    },
                   }}
                 >
-                  Change Image
-                  <input type="file" hidden onChange={handleImageChange} />
+                  Select New Files
+                  <input
+                    type="file"
+                    hidden
+                    multiple
+                    onChange={handleImageChange}
+                    accept="image/*"
+                  />
                 </Button>
+
+                {newImages.length > 0 && (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {newImages.map((file, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          position: "relative",
+                          width: 80,
+                          height: 80,
+                          border: "1px solid #ddd",
+                          borderRadius: 1,
+                        }}
+                      >
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt="New Preview"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={() => removeNewImage(index)}
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            bgcolor: "rgba(255,255,255,0.8)",
+                            p: "2px",
+                            "&:hover": { bgcolor: "white", color: "red" },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </Box>
             </Grid>
 
@@ -184,6 +351,7 @@ const UpdateProduct = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
+                disabled={loading}
                 size="large"
                 sx={{
                   bgcolor: "#0f2a1d",
@@ -192,7 +360,11 @@ const UpdateProduct = () => {
                   "&:hover": { bgcolor: "#144430" },
                 }}
               >
-                Save Changes
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Update Product"
+                )}
               </Button>
             </Grid>
           </Grid>

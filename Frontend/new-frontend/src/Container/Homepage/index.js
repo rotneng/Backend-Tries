@@ -280,9 +280,13 @@ const Homepage = () => {
               filteredProducts.map((item) => {
                 const stockLevel = getStock(item);
                 const currentStock = stockLevel !== null ? stockLevel : 1000;
-
                 const isOutOfStock = currentStock <= 0;
                 const isLowStock = currentStock > 0 && currentStock < 5;
+                const displayImage =
+                  item.images && item.images.length > 0
+                    ? item.images[0]
+                    : item.image ||
+                      "https://placehold.co/300x300?text=No+Image";
 
                 return (
                   <Grid item key={item._id} xs={12} sm={6} md={4} lg={3}>
@@ -377,9 +381,11 @@ const Homepage = () => {
                       >
                         <CardMedia
                           component="img"
-                          image={
-                            item.image || "https://via.placeholder.com/300"
-                          }
+                          image={displayImage}
+                          onError={(e) => {
+                            e.target.src =
+                              "https://placehold.co/300x300?text=No+Image";
+                          }}
                           alt={item.title}
                           sx={{
                             position: "absolute",

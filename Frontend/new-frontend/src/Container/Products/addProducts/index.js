@@ -5,11 +5,12 @@ import {
   Typography,
   CircularProgress,
   Paper,
+  IconButton,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { CloudUpload } from "@mui/icons-material";
+import { CloudUpload, Delete } from "@mui/icons-material";
 import { addProduct } from "../../../Actions/product.actions";
 
 const AddProducts = () => {
@@ -17,7 +18,7 @@ const AddProducts = () => {
   const navigate = useNavigate();
 
   const [error, setError] = useState("");
-  const [image, setImage] = useState(null);
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -37,15 +38,21 @@ const AddProducts = () => {
   };
 
   const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        setError("Please select a valid image file");
-        return;
+    const files = Array.from(e.target.files);
+
+    if (files.length > 0) {
+      const validFiles = files.filter((file) => file.type.startsWith("image/"));
+
+      if (validFiles.length !== files.length) {
+        setError("Some files were skipped because they are not valid images.");
       }
-      setImage(file);
+
+      setImages((prevImages) => [...prevImages, ...validFiles]);
       setError("");
     }
+  };
+  const removeImage = (indexToRemove) => {
+    setImages(images.filter((_, index) => index !== indexToRemove));
   };
 
   const handleAddProduct = async () => {
@@ -54,23 +61,28 @@ const AddProducts = () => {
       return;
     }
 
-    if (!image) {
-      setError("Product image is required");
+    if (images.length === 0) {
+      setError("At least one product image is required");
       return;
     }
 
     setLoading(true);
 
     try {
-      const formDataToSend = new FormData();
+      const submissionData = new FormData();
 
-      Object.keys(formData).forEach((key) => {
-        formDataToSend.append(key, formData[key]);
+      submissionData.append("title", formData.title);
+      submissionData.append("description", formData.description);
+      submissionData.append("price", formData.price);
+      submissionData.append("category", formData.category);
+      submissionData.append("stock", formData.stock);
+      submissionData.append("sizes", formData.sizes);
+      submissionData.append("colors", formData.colors);
+
+      images.forEach((file) => {
+        submissionData.append("images", file);
       });
-
-      formDataToSend.append("image", image);
-
-      await dispatch(addProduct(formDataToSend, navigate));
+      await dispatch(addProduct(submissionData, navigate));
     } catch (error) {
       console.log("error in adding products", error);
       setError("Failed to add product. Please try again.");
@@ -212,17 +224,71 @@ const AddProducts = () => {
               },
             }}
           >
-            {image ? "Change Image" : "Upload Image"}
-            <input type="file" hidden onChange={handleImage} accept="image/*" />
+            Upload Images
+            <input
+              type="file"
+              hidden
+              multiple
+              onChange={handleImage}
+              accept="image/*"
+            />
           </Button>
-
-          {image && (
-            <Typography
-              variant="body2"
-              sx={{ color: "#0f2a1d", fontWeight: "bold" }}
+          {images.length > 0 && (
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                justifyContent: "center",
+              }}
             >
-              Selected: {image.name}
-            </Typography>
+              {images.map((img, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    position: "relative",
+                    width: 80,
+                    height: 80,
+                    border: "1px solid #ddd",
+                    borderRadius: 1,
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt="Preview"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => removeImage(index)}
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      bgcolor: "rgba(255,255,255,0.7)",
+                      padding: "2px",
+                      "&:hover": { bgcolor: "white", color: "red" },
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Typography
+                variant="caption"
+                display="block"
+                width="100%"
+                sx={{ mt: 1 }}
+              >
+                {images.length} file(s) selected
+              </Typography>
+            </Box>
           )}
         </Box>
 

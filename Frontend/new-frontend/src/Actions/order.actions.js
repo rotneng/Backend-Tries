@@ -5,10 +5,10 @@ export const createOrder = (order) => {
   return async (dispatch) => {
     dispatch({ type: orderConstants.ORDER_CREATE_REQUEST });
     try {
-      console.log("👉 Sending Order to Backend:", order);
+      console.log("Sending Order to Backend:", order);
       const res = await axios.post("/order", order);
 
-      console.log("✅ Backend Response:", res);
+      console.log("Backend Response:", res);
       if (res.status === 201) {
         dispatch({
           type: orderConstants.ORDER_CREATE_SUCCESS,
@@ -18,7 +18,7 @@ export const createOrder = (order) => {
       }
     } catch (error) {
       console.error(
-        "❌ ORDER SAVE FAILED:",
+        "ORDER SAVE FAILED:",
         error.response ? error.response.data : error
       );
       dispatch({
