@@ -27,8 +27,8 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-
 import { getAddresses } from "../../Actions/address.actions";
+import { getProducts } from "../../Actions/product.actions";
 
 const steps = ["Cart", "Shipping Address", "Payment"];
 
@@ -40,6 +40,7 @@ const CheckoutPage = () => {
   const { cartItems } = useSelector((state) => state.cart);
   const addressState = useSelector((state) => state.addressList || {});
   const { addresses, loading: loadingAddress } = addressState;
+  const { products } = useSelector((state) => state.product);
 
   const token = localStorage.getItem("token");
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -47,8 +48,11 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (token) {
       dispatch(getAddresses());
+      if (!products || products.length === 0) {
+        dispatch(getProducts());
+      }
     }
-  }, [dispatch, token]);
+  }, [dispatch, token, products]);
 
   useEffect(() => {
     if (location.state?.selectedAddress) {
@@ -76,6 +80,49 @@ const CheckoutPage = () => {
         },
       });
     }
+  };
+
+  const getProductImage = (item) => {
+    if (!item) return "https://via.placeholder.com/150";
+    const extractUrl = (data) => {
+      if (!data) return null;
+      if (typeof data === "string") return data;
+      if (typeof data === "object") {
+        return data.img || data.url || data.image || data.filename || data.path;
+      }
+      return null;
+    };
+    let url = extractUrl(item.image) || extractUrl(item.img);
+
+    if (
+      !url &&
+      item.images &&
+      Array.isArray(item.images) &&
+      item.images.length > 0
+    ) {
+      url = extractUrl(item.images[0]);
+    }
+
+    if (!url && item.product && typeof item.product === "object") {
+      const p = item.product;
+      url = extractUrl(p.image) || extractUrl(p.img);
+      if (!url && p.images && p.images.length > 0)
+        url = extractUrl(p.images[0]);
+      if (!url && p.productPictures && p.productPictures.length > 0)
+        url = extractUrl(p.productPictures[0]);
+    }
+
+    if (url) {
+      if (url.startsWith("http") || url.startsWith("data:")) return url;
+      const baseUrl = "http://localhost:3000";
+      let cleanPath = url.replace(/\\/g, "/");
+      if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+      if (cleanPath.startsWith("public/")) cleanPath = cleanPath.substring(7);
+
+      return `${baseUrl}/public/${cleanPath}`;
+    }
+
+    return "https://via.placeholder.com/150";
   };
 
   return (
@@ -297,45 +344,65 @@ const CheckoutPage = () => {
 
               <Box sx={{ p: 3, maxHeight: "40vh", overflowY: "auto" }}>
                 {cartItems &&
-                  cartItems.map((item) => (
-                    <Stack
-                      key={item._id}
-                      direction="row"
-                      spacing={2}
-                      sx={{ mb: 2 }}
-                    >
-                      <Avatar
-                        variant="rounded"
-                        src={item.image}
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          bgcolor: "#fff",
-                          border: "1px solid #eee",
-                        }}
-                      />
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography
-                          variant="body2"
-                          fontWeight="600"
-                          sx={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
+                  cartItems.map((item) => {
+                    const productId =
+                      item.product?._id || item.product || item._id;
+                    const realProduct = products
+                      ? products.find((p) => p._id === productId)
+                      : null;
+                    const imageSrc =
+                      getProductImage(item) !==
+                      "https://via.placeholder.com/150"
+                        ? getProductImage(item)
+                        : getProductImage(realProduct);
+
+                    return (
+                      <Stack
+                        key={item._id}
+                        direction="row"
+                        spacing={2}
+                        sx={{ mb: 2 }}
+                      >
+                        <Avatar
+                          variant="rounded"
+                          src={imageSrc}
+                          imgProps={{
+                            onError: (e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://via.placeholder.com/150?text=Error";
+                            },
                           }}
-                        >
-                          {item.title}
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            bgcolor: "#fff",
+                            border: "1px solid #eee",
+                          }}
+                        />
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight="600"
+                            sx={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {item.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Qty: {item.qty} × ₦{item.price.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          ₦{(item.price * item.qty).toLocaleString()}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Qty: {item.qty} × ₦{item.price.toLocaleString()}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" fontWeight="bold">
-                        ₦{(item.price * item.qty).toLocaleString()}
-                      </Typography>
-                    </Stack>
-                  ))}
+                      </Stack>
+                    );
+                  })}
               </Box>
 
               <Divider />

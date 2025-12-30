@@ -52,6 +52,49 @@ const CartPage = () => {
       dispatch(getProducts());
     }
   }, [dispatch, products]);
+  const getProductImage = (item) => {
+    if (!item) return "https://via.placeholder.com/150";
+    if (item.name === "Dress" || item.title === "Dress") {
+      console.log("DEBUG DRESS ITEM:", item);
+    }
+    const extractUrl = (data) => {
+      if (!data) return null;
+      if (typeof data === "string") return data;
+      if (typeof data === "object") {
+        return data.img || data.url || data.image || data.filename || data.path;
+      }
+      return null;
+    };
+
+    let url = extractUrl(item.image) || extractUrl(item.img);
+    if (url) return url;
+
+    if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+      url = extractUrl(item.images[0]);
+      if (url) return url;
+    }
+    if (item.product && typeof item.product === "object") {
+      const p = item.product;
+
+      url = extractUrl(p.image) || extractUrl(p.img);
+      if (url) return url;
+
+      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+        url = extractUrl(p.images[0]);
+        if (url) return url;
+      }
+      if (
+        p.productPictures &&
+        Array.isArray(p.productPictures) &&
+        p.productPictures.length > 0
+      ) {
+        url = extractUrl(p.productPictures[0]);
+        if (url) return url;
+      }
+    }
+    return "https://via.placeholder.com/150";
+  };
+
   const getStock = (p) => {
     if (!p) return null;
     if (p.quantity !== undefined) return p.quantity;
@@ -216,8 +259,6 @@ const CartPage = () => {
       </Box>
     );
   }
-
-  // --- RENDER: CART ITEMS ---
   return (
     <Box sx={{ bgcolor: "#f4f6f8", minHeight: "100vh", py: 4 }}>
       <Container maxWidth="lg">
@@ -254,7 +295,7 @@ const CartPage = () => {
 
               return (
                 <Card
-                  key={item._id}
+                  key={item._id || productId}
                   elevation={0}
                   sx={{
                     display: "flex",
@@ -286,8 +327,13 @@ const CartPage = () => {
                     }}
                   >
                     <img
-                      src={item.image || "https://via.placeholder.com/150"}
-                      alt={item.title}
+                      src={
+                        getProductImage(item) !==
+                        "https://via.placeholder.com/150"
+                          ? getProductImage(item)
+                          : getProductImage(realProduct)
+                      }
+                      alt={item.title || item.name}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -295,8 +341,6 @@ const CartPage = () => {
                       }}
                     />
                   </Box>
-
-                  {/* Details */}
                   <CardContent
                     sx={{
                       flexGrow: 1,
@@ -325,7 +369,7 @@ const CartPage = () => {
                               },
                             }}
                           >
-                            {item.title}
+                            {item.title || item.name}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -342,7 +386,9 @@ const CartPage = () => {
                         </Box>
                         <Tooltip title="Remove Item">
                           <IconButton
-                            onClick={() => onRemoveCartItem(item._id)}
+                            onClick={() =>
+                              onRemoveCartItem(item._id || productId)
+                            }
                             color="error"
                             size="small"
                           >

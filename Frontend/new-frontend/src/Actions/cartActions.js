@@ -1,11 +1,23 @@
 import axios from "../helpers/axios";
-import { 
-  setCart, 
-  setCartLoading, 
-  setCartError, 
-  addToCartLocal, 
-  removeFromCartLocal 
+import {
+  setCart,
+  setCartLoading,
+  setCartError,
+  addToCartLocal,
+  removeFromCartLocal,
 } from "../Reducers/cartSlice";
+
+const normalizeProductImage = (item) => {
+  const productData = item.product ? item.product : item;
+  if (
+    !productData.image &&
+    productData.images &&
+    productData.images.length > 0
+  ) {
+    productData.image = productData.images[0];
+  }
+  return item;
+};
 
 export const getCartItems = () => {
   return async (dispatch) => {
@@ -15,22 +27,38 @@ export const getCartItems = () => {
       try {
         dispatch(setCartLoading(true));
         const res = await axios.post("/cart/user/cart/getCartItems");
+
         if (res.status === 200) {
           const { cartItems } = res.data;
+
           if (cartItems && typeof cartItems === "object") {
-             const cartArray = Object.keys(cartItems).map((key) => cartItems[key]);
-             dispatch(setCart(cartArray));
+            const cartArray = Object.keys(cartItems).map((key) => {
+              const item = cartItems[key];
+              return normalizeProductImage(item);
+            });
+
+            dispatch(setCart(cartArray));
           }
         }
       } catch (error) {
         console.log(error);
       }
-    } 
+    }
   };
 };
 
 export const addItemToCart = (product, qty = 1) => {
   return async (dispatch) => {
+    let productPayload = { ...product };
+
+    if (
+      !productPayload.image &&
+      productPayload.images &&
+      productPayload.images.length > 0
+    ) {
+      productPayload.image = productPayload.images[0];
+    }
+
     const token = localStorage.getItem("token");
 
     if (token) {
@@ -38,9 +66,9 @@ export const addItemToCart = (product, qty = 1) => {
         dispatch(setCartLoading(true));
         const payload = {
           cartItems: {
-            product: product._id,
+            product: productPayload._id,
             quantity: qty,
-            price: product.price,
+            price: productPayload.price,
           },
         };
         const res = await axios.post("/cart/user/cart/addtocart", payload);
@@ -52,7 +80,7 @@ export const addItemToCart = (product, qty = 1) => {
         dispatch(setCartError(error));
       }
     } else {
-      dispatch(addToCartLocal({ product, qty }));
+      dispatch(addToCartLocal({ product: productPayload, qty }));
     }
   };
 };

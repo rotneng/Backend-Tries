@@ -8,13 +8,13 @@ exports.registerUser = async (req, res) => {
   try {
     const { username, password, email, role } = req.body;
     const existingUser = await User.findOne({ username });
-
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const salt = await bcrypt.genSalt();
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
     function randomNumber() {
       return Math.floor(100000 + Math.random() * 900000);
     }
@@ -29,32 +29,32 @@ exports.registerUser = async (req, res) => {
       });
       await token.save();
       await sendEmail(email, otp);
-      console.log("email sent succesfully", otp);
+      console.log("Email sent successfully");
     } catch (error) {
-      console.log("error sending mail nodemailer", error);
+      console.log("Error sending mail:", error);
     }
 
     await user.save();
-    return res.status(200).json({ message: "user registered succesfully" });
+    return res.status(200).json({ message: "User registered successfully" });
   } catch (error) {
-    console.log("error in registering user", error);
-    return res.status(400).json({ message: "error in registering user" });
+    console.log("Error registering user:", error);
+    return res.status(400).json({ message: "Error registering user" });
   }
 };
 
 exports.loginUser = async (req, res) => {
   try {
-    const { username, password, role } = req.body;
-    const user = await User.findOne({ username: username });
-    console.log("user", user);
+    const { username, password } = req.body;
+
+    const user = await User.findOne({ username });
 
     if (!user) {
-      return res.status(400).json({ message: "user does not exist" });
+      return res.status(400).json({ message: "Invalid credentials" }); 
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "invalid credentials" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign(
@@ -63,25 +63,25 @@ exports.loginUser = async (req, res) => {
         username: user.username,
         role: user.role,
       },
-      "qwerty",
+      process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
+
     return res.status(200).json({
-      message: "login succesfull",
+      message: "Login successful",
       token,
       role: user.role,
       username: user.username,
     });
   } catch (error) {
-    console.log("error in login", error);
-    return res.status(400).json({ message: "error in login of user" });
+    console.log("Error in login:", error);
+    return res.status(500).json({ message: "Server error during login" });
   }
 };
 
 exports.saveShippingAddress = async (req, res) => {
   try {
-    const userId = req.user.userId; 
-
+    const userId = req.user.userId;
     const { fullName, phone, address, city, state } = req.body;
 
     const user = await User.findById(userId);
@@ -105,7 +105,7 @@ exports.saveShippingAddress = async (req, res) => {
       shippingAddress: user.shippingAddress,
     });
   } catch (error) {
-    console.log("error saving address", error);
+    console.log("Error saving address:", error);
     return res.status(500).json({ message: "Error saving address" });
   }
 };
@@ -122,7 +122,7 @@ exports.getShippingAddress = async (req, res) => {
 
     return res.status(200).json(user.shippingAddress || {});
   } catch (error) {
-    console.log("error fetching address", error);
+    console.log("Error fetching address:", error);
     return res.status(500).json({ message: "Error fetching address" });
   }
 };

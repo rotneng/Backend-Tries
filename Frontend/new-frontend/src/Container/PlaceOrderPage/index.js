@@ -48,6 +48,8 @@ const PlaceOrderPage = () => {
   );
 
   const cart = useSelector((state) => state.cart);
+  const { products } = useSelector((state) => state.product);
+
   const finalCartItems =
     stateData.cartItems && stateData.cartItems.length > 0
       ? stateData.cartItems
@@ -62,6 +64,12 @@ const PlaceOrderPage = () => {
   const { loading, success, order, error } = orderCreate;
 
   useEffect(() => {
+    if (!products || products.length === 0) {
+      dispatch(getProducts());
+    }
+  }, [dispatch, products]);
+
+  useEffect(() => {
     if (success && order) {
       if (finalCartItems && finalCartItems.length > 0) {
         finalCartItems.forEach((item) => {
@@ -71,7 +79,6 @@ const PlaceOrderPage = () => {
       }
 
       dispatch({ type: orderConstants.ORDER_CREATE_RESET });
-
       dispatch(getProducts());
 
       navigate("/cart", {
@@ -82,18 +89,73 @@ const PlaceOrderPage = () => {
       });
     }
   }, [success, order, navigate, dispatch, finalCartItems]);
+  const getProductImage = (item) => {
+    if (!item) return "https://via.placeholder.com/150";
+
+    const extractUrl = (data) => {
+      if (!data) return null;
+      if (typeof data === "string") return data;
+      if (typeof data === "object") {
+        return data.img || data.url || data.image || data.filename || data.path;
+      }
+      return null;
+    };
+
+    let url = extractUrl(item.image) || extractUrl(item.img);
+
+    if (
+      !url &&
+      item.images &&
+      Array.isArray(item.images) &&
+      item.images.length > 0
+    ) {
+      url = extractUrl(item.images[0]);
+    }
+
+    if (!url && item.product && typeof item.product === "object") {
+      const p = item.product;
+      url = extractUrl(p.image) || extractUrl(p.img);
+      if (!url && p.images && p.images.length > 0)
+        url = extractUrl(p.images[0]);
+      if (!url && p.productPictures && p.productPictures.length > 0)
+        url = extractUrl(p.productPictures[0]);
+    }
+
+    if (url) {
+      if (url.startsWith("http") || url.startsWith("data:")) return url;
+      const baseUrl = "http://localhost:5000";
+      let cleanPath = url.replace(/\\/g, "/");
+      if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
+      if (cleanPath.startsWith("public/")) cleanPath = cleanPath.substring(7);
+      return `${baseUrl}/public/${cleanPath}`;
+    }
+
+    return "https://via.placeholder.com/150";
+  };
 
   const submitOrderToBackend = (paymentResult = null, isPaid = false) => {
     if (!finalAddress) return alert("Shipping address is missing");
 
     const safeTotal = Number(totalPrice);
-    const mappedOrderItems = finalCartItems.map((item) => ({
-      product: item.product?._id || item.product || item._id,
-      title: item.name || item.title || "Item",
-      image: item.img || item.image || "",
-      price: Number(item.price),
-      qty: Number(item.qty || item.quantity || 1),
-    }));
+    const mappedOrderItems = finalCartItems.map((item) => {
+      const productId = item.product?._id || item.product || item._id;
+      const realProduct = products
+        ? products.find((p) => p._id === productId)
+        : null;
+      let finalImage = getProductImage(item);
+      if (finalImage === "https://via.placeholder.com/150") {
+        finalImage = getProductImage(realProduct);
+      }
+
+      return {
+        product: productId,
+        title: item.name || item.title || "Item",
+        image: finalImage,
+        price: Number(item.price),
+        qty: Number(item.qty || item.quantity || 1),
+      };
+    });
+
     const cleanShippingAddress = {
       fullName: finalAddress.fullName || finalAddress.name || "Customer",
       address: finalAddress.address,
@@ -140,7 +202,7 @@ const PlaceOrderPage = () => {
     if (!scriptLoaded) return alert("Paystack SDK failed to load.");
 
     const handler = window.PaystackPop.setup({
-      key: "pk_test_034ffa09d1ccc93fd7c2428df2803c28e83b5f5e",
+      key: process.env.REACT_APP_PAYSTACK_KEY,
       email: user?.email || "customer@example.com",
       amount: Math.round(Number(totalPrice) * 100),
       currency: "NGN",
@@ -271,37 +333,59 @@ const PlaceOrderPage = () => {
                 title="Order Items"
               />
               <Stack spacing={2}>
-                {finalCartItems.map((item, index) => (
-                  <React.Fragment key={index}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar
-                        variant="rounded"
-                        src={item.image || item.img}
-                        sx={{ width: 56, height: 56, bgcolor: "#f0f0f0" }}
-                      >
-                        {item.name ? item.name.charAt(0) : "I"}
-                      </Avatar>
+                {finalCartItems.map((item, index) => {
+                  const productId =
+                    item.product?._id || item.product || item._id;
+                  const realProduct = products
+                    ? products.find((p) => p._id === productId)
+                    : null;
 
-                      <Box sx={{ flex: 1 }}>
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight="600"
-                          sx={{ lineHeight: 1.2 }}
+                  const imageSrc =
+                    getProductImage(item) !== "https://via.placeholder.com/150"
+                      ? getProductImage(item)
+                      : getProductImage(realProduct);
+
+                  return (
+                    <React.Fragment key={index}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                      >
+                        <Avatar
+                          variant="rounded"
+                          src={imageSrc}
+                          imgProps={{
+                            onError: (e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://via.placeholder.com/150?text=Error";
+                            },
+                          }}
+                          sx={{ width: 56, height: 56, bgcolor: "#f0f0f0" }}
                         >
-                          {item.name || item.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Qty: {item.qty}
+                          {item.name ? item.name.charAt(0) : "I"}
+                        </Avatar>
+
+                        <Box sx={{ flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="600"
+                            sx={{ lineHeight: 1.2 }}
+                          >
+                            {item.name || item.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Qty: {item.qty}
+                          </Typography>
+                        </Box>
+
+                        <Typography fontWeight="bold">
+                          ₦{(item.price * item.qty).toLocaleString()}
                         </Typography>
                       </Box>
-
-                      <Typography fontWeight="bold">
-                        ₦{(item.price * item.qty).toLocaleString()}
-                      </Typography>
-                    </Box>
-                    {index < finalCartItems.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
+                      {index < finalCartItems.length - 1 && <Divider />}
+                    </React.Fragment>
+                  );
+                })}
               </Stack>
             </Paper>
 
