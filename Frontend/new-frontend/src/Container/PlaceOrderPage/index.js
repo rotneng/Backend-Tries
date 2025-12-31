@@ -89,6 +89,7 @@ const PlaceOrderPage = () => {
       });
     }
   }, [success, order, navigate, dispatch, finalCartItems]);
+
   const getProductImage = (item) => {
     if (!item) return "https://via.placeholder.com/150";
 
@@ -103,31 +104,24 @@ const PlaceOrderPage = () => {
 
     let url = extractUrl(item.image) || extractUrl(item.img);
 
-    if (
-      !url &&
-      item.images &&
-      Array.isArray(item.images) &&
-      item.images.length > 0
-    ) {
+    if (!url && item.images && Array.isArray(item.images) && item.images.length > 0) {
       url = extractUrl(item.images[0]);
     }
 
     if (!url && item.product && typeof item.product === "object") {
       const p = item.product;
       url = extractUrl(p.image) || extractUrl(p.img);
-      if (!url && p.images && p.images.length > 0)
-        url = extractUrl(p.images[0]);
-      if (!url && p.productPictures && p.productPictures.length > 0)
-        url = extractUrl(p.productPictures[0]);
+      if (!url && p.images && p.images.length > 0) url = extractUrl(p.images[0]);
+      if (!url && p.productPictures && p.productPictures.length > 0) url = extractUrl(p.productPictures[0]);
     }
 
     if (url) {
       if (url.startsWith("http") || url.startsWith("data:")) return url;
-      const baseUrl = "http://localhost:5000";
+      const baseUrl = "http://localhost:5000"; 
       let cleanPath = url.replace(/\\/g, "/");
       if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
       if (cleanPath.startsWith("public/")) cleanPath = cleanPath.substring(7);
-      return `${baseUrl}/public/${cleanPath}`;
+      return `${baseUrl}/public/${cleanPath}`; 
     }
 
     return "https://via.placeholder.com/150";
@@ -137,12 +131,12 @@ const PlaceOrderPage = () => {
     if (!finalAddress) return alert("Shipping address is missing");
 
     const safeTotal = Number(totalPrice);
+    
     const mappedOrderItems = finalCartItems.map((item) => {
       const productId = item.product?._id || item.product || item._id;
-      const realProduct = products
-        ? products.find((p) => p._id === productId)
-        : null;
+      const realProduct = products ? products.find((p) => p._id === productId) : null;
       let finalImage = getProductImage(item);
+      
       if (finalImage === "https://via.placeholder.com/150") {
         finalImage = getProductImage(realProduct);
       }
@@ -200,6 +194,8 @@ const PlaceOrderPage = () => {
   const payWithPaystack = async () => {
     const scriptLoaded = await loadPaystackScript();
     if (!scriptLoaded) return alert("Paystack SDK failed to load.");
+
+    // const paystackKey = "pk_test_034ffa09d1ccc93fd7c2428df2803c28e83b5f5e";
 
     const handler = window.PaystackPop.setup({
       key: process.env.REACT_APP_PAYSTACK_KEY,
@@ -334,31 +330,24 @@ const PlaceOrderPage = () => {
               />
               <Stack spacing={2}>
                 {finalCartItems.map((item, index) => {
-                  const productId =
-                    item.product?._id || item.product || item._id;
-                  const realProduct = products
-                    ? products.find((p) => p._id === productId)
-                    : null;
+                  const productId = item.product?._id || item.product || item._id;
+                  const realProduct = products ? products.find((p) => p._id === productId) : null;
 
-                  const imageSrc =
-                    getProductImage(item) !== "https://via.placeholder.com/150"
-                      ? getProductImage(item)
-                      : getProductImage(realProduct);
+                  const imageSrc = getProductImage(item) !== "https://via.placeholder.com/150"
+                    ? getProductImage(item)
+                    : getProductImage(realProduct);
 
                   return (
                     <React.Fragment key={index}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <Avatar
                           variant="rounded"
                           src={imageSrc}
                           imgProps={{
-                            onError: (e) => {
-                              e.target.onerror = null;
-                              e.target.src =
-                                "https://via.placeholder.com/150?text=Error";
-                            },
+                             onError: (e) => {
+                               e.target.onerror = null; 
+                               e.target.src = "https://via.placeholder.com/150?text=Error";
+                             }
                           }}
                           sx={{ width: 56, height: 56, bgcolor: "#f0f0f0" }}
                         >
