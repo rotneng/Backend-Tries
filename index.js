@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const helmet = require("helmet"); 
+const helmet = require("helmet");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -17,8 +17,13 @@ const orderRoutes = require("./Route/orderRoute");
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(helmet()); 
-app.use(cors({ origin: "*" })); 
+app.use(helmet());
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://scarlett-marque.vercel.app"],
+    credentials: true,
+  })
+);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
