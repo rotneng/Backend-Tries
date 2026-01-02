@@ -27,9 +27,25 @@ app.use(
   })
 );
 
+// In server.js
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://scarlett-marque.vercel.app"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow Localhost, the Main Vercel App, and any Vercel Preview URLs
+      if (
+        origin === "http://localhost:3000" || 
+        origin === "https://scarlett-marque.vercel.app" ||
+        origin.endsWith(".vercel.app") // <--- THIS FIXES THE ISSUE!
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
