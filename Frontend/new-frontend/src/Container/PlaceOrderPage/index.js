@@ -19,6 +19,7 @@ import {
   IconButton,
   alpha,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 
 import CreditCardIcon from "@mui/icons-material/CreditCard";
@@ -39,6 +40,7 @@ const PlaceOrderPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const stateData = location.state || {};
   const finalAddress = stateData.shippingAddress || stateData.selectedAddress;
@@ -104,24 +106,31 @@ const PlaceOrderPage = () => {
 
     let url = extractUrl(item.image) || extractUrl(item.img);
 
-    if (!url && item.images && Array.isArray(item.images) && item.images.length > 0) {
+    if (
+      !url &&
+      item.images &&
+      Array.isArray(item.images) &&
+      item.images.length > 0
+    ) {
       url = extractUrl(item.images[0]);
     }
 
     if (!url && item.product && typeof item.product === "object") {
       const p = item.product;
       url = extractUrl(p.image) || extractUrl(p.img);
-      if (!url && p.images && p.images.length > 0) url = extractUrl(p.images[0]);
-      if (!url && p.productPictures && p.productPictures.length > 0) url = extractUrl(p.productPictures[0]);
+      if (!url && p.images && p.images.length > 0)
+        url = extractUrl(p.images[0]);
+      if (!url && p.productPictures && p.productPictures.length > 0)
+        url = extractUrl(p.productPictures[0]);
     }
 
     if (url) {
       if (url.startsWith("http") || url.startsWith("data:")) return url;
-      const baseUrl = "http://localhost:5000"; 
+      const baseUrl = "http://localhost:5000";
       let cleanPath = url.replace(/\\/g, "/");
       if (cleanPath.startsWith("/")) cleanPath = cleanPath.substring(1);
       if (cleanPath.startsWith("public/")) cleanPath = cleanPath.substring(7);
-      return `${baseUrl}/public/${cleanPath}`; 
+      return `${baseUrl}/public/${cleanPath}`;
     }
 
     return "https://via.placeholder.com/150";
@@ -131,12 +140,14 @@ const PlaceOrderPage = () => {
     if (!finalAddress) return alert("Shipping address is missing");
 
     const safeTotal = Number(totalPrice);
-    
+
     const mappedOrderItems = finalCartItems.map((item) => {
       const productId = item.product?._id || item.product || item._id;
-      const realProduct = products ? products.find((p) => p._id === productId) : null;
+      const realProduct = products
+        ? products.find((p) => p._id === productId)
+        : null;
       let finalImage = getProductImage(item);
-      
+
       if (finalImage === "https://via.placeholder.com/150") {
         finalImage = getProductImage(realProduct);
       }
@@ -195,10 +206,15 @@ const PlaceOrderPage = () => {
     const scriptLoaded = await loadPaystackScript();
     if (!scriptLoaded) return alert("Paystack SDK failed to load.");
 
-    // const paystackKey = "pk_test_034ffa09d1ccc93fd7c2428df2803c28e83b5f5e";
+    const paystackKey = process.env.REACT_APP_PAYSTACK_KEY;
+
+    if (!paystackKey) {
+      alert("Payment setup incomplete. Please contact support.");
+      return;
+    }
 
     const handler = window.PaystackPop.setup({
-      key: process.env.REACT_APP_PAYSTACK_KEY,
+      key: paystackKey,
       email: user?.email || "customer@example.com",
       amount: Math.round(Number(totalPrice) * 100),
       currency: "NGN",
@@ -263,7 +279,11 @@ const PlaceOrderPage = () => {
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         {icon}
-        <Typography variant="h6" fontWeight="bold">
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}
+        >
           {title}
         </Typography>
       </Box>
@@ -276,8 +296,14 @@ const PlaceOrderPage = () => {
   );
 
   return (
-    <Box sx={{ backgroundColor: "#f8f9fa", minHeight: "100vh", py: 4 }}>
-      <Container maxWidth="lg">
+    <Box
+      sx={{
+        backgroundColor: "#f8f9fa",
+        minHeight: "100vh",
+        py: { xs: 2, md: 4 },
+      }}
+    >
+      <Container maxWidth="lg" sx={{ px: { xs: 2, md: 3 } }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(-1)}
@@ -288,23 +314,32 @@ const PlaceOrderPage = () => {
         <Typography
           variant="h4"
           fontWeight="800"
-          sx={{ mb: 4, color: "#0f2a1d" }}
+          sx={{
+            mb: { xs: 2, md: 4 },
+            color: "#0f2a1d",
+            fontSize: { xs: "1.75rem", md: "2.125rem" },
+          }}
         >
           Review & Place Order
         </Typography>
 
-        <Grid container spacing={4}>
+        <Grid container spacing={{ xs: 2, md: 4 }}>
           <Grid item xs={12} md={8}>
             <Paper
               elevation={0}
-              sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid #e0e0e0" }}
+              sx={{
+                p: { xs: 2, md: 3 },
+                mb: 3,
+                borderRadius: 3,
+                border: "1px solid #e0e0e0",
+              }}
             >
               <SectionHeader
                 icon={<LocationOnIcon sx={{ color: "#0f2a1d" }} />}
                 title="Shipping Details"
                 onEdit={() => navigate("/checkout")}
               />
-              <Box sx={{ ml: 4 }}>
+              <Box sx={{ ml: { xs: 0, md: 4 }, pl: { xs: 4, md: 0 } }}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {finalAddress.fullName}
                 </Typography>
@@ -320,9 +355,15 @@ const PlaceOrderPage = () => {
                 </Typography>
               </Box>
             </Paper>
+
             <Paper
               elevation={0}
-              sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid #e0e0e0" }}
+              sx={{
+                p: { xs: 2, md: 3 },
+                mb: 3,
+                borderRadius: 3,
+                border: "1px solid #e0e0e0",
+              }}
             >
               <SectionHeader
                 icon={<ShoppingBagIcon sx={{ color: "#0f2a1d" }} />}
@@ -330,26 +371,40 @@ const PlaceOrderPage = () => {
               />
               <Stack spacing={2}>
                 {finalCartItems.map((item, index) => {
-                  const productId = item.product?._id || item.product || item._id;
-                  const realProduct = products ? products.find((p) => p._id === productId) : null;
-
-                  const imageSrc = getProductImage(item) !== "https://via.placeholder.com/150"
-                    ? getProductImage(item)
-                    : getProductImage(realProduct);
+                  const productId =
+                    item.product?._id || item.product || item._id;
+                  const realProduct = products
+                    ? products.find((p) => p._id === productId)
+                    : null;
+                  const imageSrc =
+                    getProductImage(item) !== "https://via.placeholder.com/150"
+                      ? getProductImage(item)
+                      : getProductImage(realProduct);
 
                   return (
                     <React.Fragment key={index}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 2,
+                        }}
+                      >
                         <Avatar
                           variant="rounded"
                           src={imageSrc}
                           imgProps={{
-                             onError: (e) => {
-                               e.target.onerror = null; 
-                               e.target.src = "https://via.placeholder.com/150?text=Error";
-                             }
+                            onError: (e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://via.placeholder.com/150?text=Error";
+                            },
                           }}
-                          sx={{ width: 56, height: 56, bgcolor: "#f0f0f0" }}
+                          sx={{
+                            width: { xs: 50, md: 64 },
+                            height: { xs: 50, md: 64 },
+                            bgcolor: "#f0f0f0",
+                          }}
                         >
                           {item.name ? item.name.charAt(0) : "I"}
                         </Avatar>
@@ -358,7 +413,10 @@ const PlaceOrderPage = () => {
                           <Typography
                             variant="subtitle2"
                             fontWeight="600"
-                            sx={{ lineHeight: 1.2 }}
+                            sx={{
+                              lineHeight: 1.2,
+                              fontSize: { xs: "0.9rem", md: "1rem" },
+                            }}
                           >
                             {item.name || item.title}
                           </Typography>
@@ -367,7 +425,10 @@ const PlaceOrderPage = () => {
                           </Typography>
                         </Box>
 
-                        <Typography fontWeight="bold">
+                        <Typography
+                          fontWeight="bold"
+                          sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}
+                        >
                           ₦{(item.price * item.qty).toLocaleString()}
                         </Typography>
                       </Box>
@@ -380,61 +441,70 @@ const PlaceOrderPage = () => {
 
             <Paper
               elevation={0}
-              sx={{ p: 3, borderRadius: 3, border: "1px solid #e0e0e0" }}
+              sx={{
+                p: { xs: 2, md: 3 },
+                borderRadius: 3,
+                border: "1px solid #e0e0e0",
+              }}
             >
               <SectionHeader
                 icon={<CreditCardIcon sx={{ color: "#0f2a1d" }} />}
                 title="Payment Method"
               />
               <RadioGroup
-                row
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                sx={{ gap: 2 }}
               >
-                {["Card", "COD"].map((method) => {
-                  const isSelected = paymentMethod === method;
-                  const isCard = method === "Card";
-                  return (
-                    <Paper
-                      key={method}
-                      component="label"
-                      elevation={0}
-                      sx={{
-                        flex: 1,
-                        p: 2,
-                        border: `2px solid ${isSelected ? "#0f2a1d" : "#eee"}`,
-                        bgcolor: isSelected ? alpha("#0f2a1d", 0.04) : "#fff",
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      <Radio value={method} sx={{ display: "none" }} />
-                      <Box
-                        sx={{ mr: 1.5, color: isSelected ? "#0f2a1d" : "#999" }}
+                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                  {["Card", "COD"].map((method) => {
+                    const isSelected = paymentMethod === method;
+                    const isCard = method === "Card";
+                    return (
+                      <Paper
+                        key={method}
+                        component="label"
+                        elevation={0}
+                        sx={{
+                          flex: 1,
+                          p: 2,
+                          border: `2px solid ${
+                            isSelected ? "#0f2a1d" : "#eee"
+                          }`,
+                          bgcolor: isSelected ? alpha("#0f2a1d", 0.04) : "#fff",
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          transition: "all 0.2s",
+                        }}
                       >
-                        {isCard ? <CreditCardIcon /> : <LocalShippingIcon />}
-                      </Box>
-                      <Box>
-                        <Typography
-                          variant="subtitle2"
-                          fontWeight="bold"
-                          color={isSelected ? "#0f2a1d" : "text.primary"}
+                        <Radio value={method} sx={{ display: "none" }} />
+                        <Box
+                          sx={{
+                            mr: 1.5,
+                            color: isSelected ? "#0f2a1d" : "#999",
+                          }}
                         >
-                          {isCard ? "Pay with Card" : "Pay on Delivery"}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {isCard
-                            ? "Secured by Paystack"
-                            : "Cash/Transfer on arrival"}
-                        </Typography>
-                      </Box>
-                    </Paper>
-                  );
-                })}
+                          {isCard ? <CreditCardIcon /> : <LocalShippingIcon />}
+                        </Box>
+                        <Box>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="bold"
+                            color={isSelected ? "#0f2a1d" : "text.primary"}
+                          >
+                            {isCard ? "Pay with Card" : "Pay on Delivery"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {isCard
+                              ? "Secured by Paystack"
+                              : "Cash/Transfer on arrival"}
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
               </RadioGroup>
             </Paper>
           </Grid>
@@ -443,7 +513,7 @@ const PlaceOrderPage = () => {
             <Card
               elevation={3}
               sx={{
-                p: 3,
+                p: { xs: 2, md: 3 },
                 borderRadius: 3,
                 position: { md: "sticky" },
                 top: 24,
@@ -481,7 +551,12 @@ const PlaceOrderPage = () => {
                 <Typography variant="h6" fontWeight="bold">
                   Total
                 </Typography>
-                <Typography variant="h5" fontWeight="bold" color="#0f2a1d">
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  color="#0f2a1d"
+                  sx={{ fontSize: { xs: "1.3rem", md: "1.5rem" } }}
+                >
                   ₦{Number(totalPrice).toLocaleString()}
                 </Typography>
               </Box>
@@ -504,7 +579,7 @@ const PlaceOrderPage = () => {
                   borderRadius: "50px",
                   fontWeight: "bold",
                   textTransform: "none",
-                  fontSize: "1.1rem",
+                  fontSize: { xs: "1rem", md: "1.1rem" },
                   "&:hover": { bgcolor: "#144430" },
                   "&.Mui-disabled": { bgcolor: "#rgba(15, 42, 29, 0.5)" },
                 }}

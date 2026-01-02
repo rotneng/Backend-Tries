@@ -36,6 +36,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getProducts, deleteProduct } from "../../Actions/product.actions";
 
+const PRIMARY_COLOR = "#0f2a1d";
+const PLACEHOLDER_IMG = "https://placehold.co/300x300?text=No+Image";
+
 const Homepage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -59,19 +62,22 @@ const Homepage = () => {
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
     const lowerCaseSearch = searchTerm.toLowerCase();
-    return products.filter(
-      (product) =>
-        product.title.toLowerCase().includes(lowerCaseSearch) ||
-        product.category.toLowerCase().includes(lowerCaseSearch)
-    );
+
+    return products.filter((product) => {
+      const title = product.title ? product.title.toLowerCase() : "";
+      const category = product.category ? product.category.toLowerCase() : "";
+      return (
+        title.includes(lowerCaseSearch) || category.includes(lowerCaseSearch)
+      );
+    });
   }, [products, searchTerm]);
 
   const getStock = (p) => {
-    if (!p) return null;
+    if (!p) return 0;
     if (p.quantity !== undefined) return p.quantity;
     if (p.stock !== undefined) return p.stock;
     if (p.countInStock !== undefined) return p.countInStock;
-    return null;
+    return 0;
   };
 
   const handleProductClick = (item) => {
@@ -96,7 +102,7 @@ const Homepage = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.reload();
+    window.location.href = "/signIn";
   };
 
   return (
@@ -105,16 +111,17 @@ const Homepage = () => {
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: "#0f2a1d",
+          bgcolor: PRIMARY_COLOR,
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
         <Toolbar
           sx={{
-            py: 1,
+            py: { xs: 2, md: 1 },
+            flexDirection: { xs: "column", md: "row" },
+            alignItems: "center",
             justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 2,
+            gap: { xs: 2, md: 2 },
           }}
         >
           <Box
@@ -123,6 +130,8 @@ const Homepage = () => {
               display: "flex",
               alignItems: "center",
               cursor: "pointer",
+              width: { xs: "100%", md: "auto" },
+              justifyContent: { xs: "center", md: "flex-start" },
               "&:hover": { opacity: 0.9 },
             }}
           >
@@ -142,9 +151,10 @@ const Homepage = () => {
 
           <Box
             sx={{
-              flexGrow: 1,
               display: "flex",
               justifyContent: "center",
+              width: { xs: "100%", md: "auto" },
+              flexGrow: { md: 1 },
               maxWidth: "600px",
             }}
           >
@@ -166,14 +176,22 @@ const Homepage = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "#0f2a1d" }} />
+                    <SearchIcon sx={{ color: PRIMARY_COLOR }} />
                   </InputAdornment>
                 ),
               }}
             />
           </Box>
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              width: { xs: "100%", md: "auto" },
+              justifyContent: { xs: "center", md: "flex-end" },
+            }}
+          >
             {!isAdmin && (
               <Tooltip title="About Us">
                 <IconButton
@@ -272,21 +290,19 @@ const Homepage = () => {
               minHeight: "50vh",
             }}
           >
-            <CircularProgress sx={{ color: "#0f2a1d" }} />
+            <CircularProgress sx={{ color: PRIMARY_COLOR }} />
           </Box>
         ) : (
           <Grid container spacing={4}>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((item) => {
-                const stockLevel = getStock(item);
-                const currentStock = stockLevel !== null ? stockLevel : 1000;
+                const currentStock = getStock(item);
                 const isOutOfStock = currentStock <= 0;
                 const isLowStock = currentStock > 0 && currentStock < 5;
                 const displayImage =
                   item.images && item.images.length > 0
                     ? item.images[0]
-                    : item.image ||
-                      "https://placehold.co/300x300?text=No+Image";
+                    : item.image || PLACEHOLDER_IMG;
 
                 return (
                   <Grid item key={item._id} xs={12} sm={6} md={4} lg={3}>
@@ -302,7 +318,7 @@ const Homepage = () => {
                         cursor: "pointer",
                         transition: "all 0.3s ease",
                         border: "1px solid #eee",
-                        opacity: isOutOfStock ? 0.8 : 1,
+                        opacity: isOutOfStock ? 0.85 : 1,
                         "&:hover": {
                           transform: "translateY(-8px)",
                           boxShadow: "0 12px 24px rgba(0,0,0,0.1)",
@@ -317,17 +333,22 @@ const Homepage = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            bgcolor: "rgba(255,255,255,0.5)",
+                            bgcolor: "rgba(255,255,255,0.6)",
                             zIndex: 1,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            pointerEvents: "none",
                           }}
                         >
                           <Chip
                             label="SOLD OUT"
                             color="error"
-                            sx={{ fontWeight: "bold", fontSize: "1rem" }}
+                            sx={{
+                              fontWeight: "bold",
+                              fontSize: "1rem",
+                              boxShadow: 2,
+                            }}
                           />
                         </Box>
                       )}
@@ -383,8 +404,7 @@ const Homepage = () => {
                           component="img"
                           image={displayImage}
                           onError={(e) => {
-                            e.target.src =
-                              "https://placehold.co/300x300?text=No+Image";
+                            e.target.src = PLACEHOLDER_IMG;
                           }}
                           alt={item.title}
                           sx={{
@@ -410,12 +430,12 @@ const Homepage = () => {
                           }}
                         >
                           <Chip
-                            label={item.category}
+                            label={item.category || "General"}
                             size="small"
                             sx={{
                               mb: 1,
-                              bgcolor: alpha("#0f2a1d", 0.05),
-                              color: "#0f2a1d",
+                              bgcolor: alpha(PRIMARY_COLOR, 0.05),
+                              color: PRIMARY_COLOR,
                               fontWeight: 600,
                               fontSize: "0.7rem",
                               textTransform: "uppercase",
@@ -460,9 +480,9 @@ const Homepage = () => {
                         >
                           <Typography
                             variant="h6"
-                            sx={{ color: "#0f2a1d", fontWeight: "bold" }}
+                            sx={{ color: PRIMARY_COLOR, fontWeight: "bold" }}
                           >
-                            ₦{item.price?.toLocaleString()}
+                            ₦{item.price?.toLocaleString() || "0"}
                           </Typography>
                           <Box
                             sx={{
@@ -473,7 +493,9 @@ const Homepage = () => {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              color: isOutOfStock ? "error.main" : "#0f2a1d",
+                              color: isOutOfStock
+                                ? "error.main"
+                                : PRIMARY_COLOR,
                             }}
                           >
                             {isOutOfStock ? (
