@@ -6,23 +6,11 @@ const Token = require("../Models/tokenModel");
 
 exports.registerUser = async (req, res) => {
   try {
-    // 1. Trim spaces (Fixes mobile keyboard issues)
     const { username, password, email, role } = req.body;
-    
-    // Clean the data
-    const cleanUsername = username.trim();
-    const cleanEmail = email.trim().toLowerCase(); // Ensure email is lowercase
 
-    // 2. Check Username
-    const existingUser = await User.findOne({ username: cleanUsername });
+    const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
-    }
-
-    // 3. Check Email (Fixes the crash when reusing email)
-    const existingEmail = await User.findOne({ email: cleanEmail });
-    if (existingEmail) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -32,37 +20,31 @@ exports.registerUser = async (req, res) => {
       return Math.floor(100000 + Math.random() * 900000);
     }
 
-    const user = new User({ 
-        username: cleanUsername, 
-        password: hashedPassword, 
-        email: cleanEmail, 
-        role 
+    const user = new User({
+      username,
+      password: hashedPassword,
+      email,
+      role,
     });
 
     try {
       const otp = randomNumber();
       const token = new Token({
-        email: cleanEmail,
+        email,
         token: otp,
       });
       await token.save();
-      
-      // Note: If SendEmail fails, we usually shouldn't block registration, 
-      // but ensure your EmailService credentials are correct in Render ENV variables.
-      await sendEmail(cleanEmail, otp); 
+      await sendEmail(email, otp);
       console.log("Email sent successfully");
     } catch (error) {
       console.log("Error sending mail:", error);
-      // We continue even if email fails, so the user is still created.
     }
 
     await user.save();
     return res.status(200).json({ message: "User registered successfully" });
-    
   } catch (error) {
     console.log("Error registering user:", error);
-    // This helps you see the REAL error in Render logs
-    return res.status(400).json({ message: "Error registering user", error: error.message });
+    return res.status(400).json({ message: "Error registering user" });
   }
 };
 
@@ -70,14 +52,10 @@ exports.loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // FIX: Clean the input here too!
-    const cleanUsername = username ? username.trim() : "";
-
-    // Find user using the cleaned username
-    const user = await User.findOne({ username: cleanUsername });
+    const user = await User.findOne({ username });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" }); 
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
