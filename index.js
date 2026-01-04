@@ -15,7 +15,7 @@ const addressRoute = require("./Route/addressRoutes");
 const orderRoutes = require("./Route/orderRoute");
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 5000;
 
 app.use(helmet());
 app.use(cors());

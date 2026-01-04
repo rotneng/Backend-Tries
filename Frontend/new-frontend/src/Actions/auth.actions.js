@@ -2,7 +2,7 @@ import axios from "axios";
 import { authConstants } from "./constant";
 
 const BASE_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:3000" 
+  ? "http://localhost:%000" 
   : "https://scarlett-marque.onrender.com";
 
 export const login = (loginData) => {

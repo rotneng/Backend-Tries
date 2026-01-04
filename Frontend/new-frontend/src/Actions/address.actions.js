@@ -3,7 +3,7 @@ import { addressConstants } from "./constant";
 
 const BASE_URL =
   window.location.hostname === "localhost"
-    ? "http://localhost:3000"
+    ? "http://localhost:%000"
     : "https://scarlett-marque.onrender.com";
 
 export const getAddresses = () => async (dispatch) => {
