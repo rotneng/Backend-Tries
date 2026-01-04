@@ -1,11 +1,10 @@
 import axios from "axios";
 import { addressConstants } from "./constant";
 
-// --- SMART URL SWITCH ---
-// Checks if you are on localhost or Vercel and picks the right backend
-const BASE_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:3000" 
-  : "https://scarlett-marque.onrender.com";
+const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://scarlett-marque.onrender.com";
 
 export const getAddresses = () => async (dispatch) => {
   try {
@@ -13,8 +12,6 @@ export const getAddresses = () => async (dispatch) => {
 
     const token = localStorage.getItem("token");
     const config = { headers: { Authorization: `Bearer ${token}` } };
-
-    // UPDATED: Uses BASE_URL
     const { data } = await axios.get(`${BASE_URL}/address`, config);
 
     dispatch({
@@ -40,8 +37,6 @@ export const addAddress = (addressData) => async (dispatch) => {
         Authorization: `Bearer ${token}`,
       },
     };
-
-    // UPDATED: Uses BASE_URL
     const { data } = await axios.post(
       `${BASE_URL}/address/add`,
       addressData,
@@ -72,7 +67,6 @@ export const updateAddress = (id, addressData) => async (dispatch) => {
       },
     };
 
-    // UPDATED: Uses BASE_URL
     const { data } = await axios.put(
       `${BASE_URL}/address/update/${id}`,
       addressData,
@@ -97,8 +91,6 @@ export const deleteAddress = (id) => async (dispatch) => {
 
     const token = localStorage.getItem("token");
     const config = { headers: { Authorization: `Bearer ${token}` } };
-
-    // UPDATED: Uses BASE_URL
     await axios.delete(`${BASE_URL}/address/delete/${id}`, config);
 
     dispatch({

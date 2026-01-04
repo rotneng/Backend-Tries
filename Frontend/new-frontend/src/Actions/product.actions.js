@@ -1,11 +1,10 @@
 import axios from "axios";
 import { productConstants } from "./constant";
 
-// --- SMART URL SWITCH ---
-// Automatically selects Localhost (for coding) or Render (for mobile/Vercel)
-const BASE_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:3000" 
-  : "https://scarlett-marque.onrender.com";
+const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://scarlett-marque.onrender.com";
 
 export const addProduct = (form, navigate) => {
   return async (dispatch) => {
@@ -25,14 +24,13 @@ export const addProduct = (form, navigate) => {
         formData.append("stock", form.stock);
 
         if (form.images && form.images.length > 0) {
-          for (let pic of form.images) {
+          Array.from(form.images).forEach((pic) => {
             formData.append("images", pic);
-          }
+          });
         }
         dataToSend = formData;
       }
 
-      // UPDATED: Uses BASE_URL
       const response = await axios.post(
         `${BASE_URL}/product/addProducts`,
         dataToSend,
@@ -66,10 +64,7 @@ export const getProducts = () => {
   return async (dispatch) => {
     dispatch({ type: productConstants.GET_PRODUCTS_REQUEST });
     try {
-      // UPDATED: Uses BASE_URL
-      const response = await axios.get(
-        `${BASE_URL}/product/getProducts`
-      );
+      const response = await axios.get(`${BASE_URL}/product/getProducts`);
 
       if (response.status === 200) {
         const productData = response.data.products
@@ -98,7 +93,6 @@ export const deleteProduct = (id) => {
     try {
       const token = localStorage.getItem("token");
 
-      // UPDATED: Uses BASE_URL
       const res = await axios.delete(
         `${BASE_URL}/product/deleteProducts/${id}`,
         {
@@ -129,7 +123,6 @@ export const updateProduct = (id, form, navigate) => {
 
     try {
       const token = localStorage.getItem("token");
-
       let dataToSend = form;
 
       if (!(form instanceof FormData)) {
@@ -143,14 +136,13 @@ export const updateProduct = (id, form, navigate) => {
         formData.append("stock", form.stock);
 
         if (form.images && form.images.length > 0) {
-          for (let pic of form.images) {
+          Array.from(form.images).forEach((pic) => {
             formData.append("images", pic);
-          }
+          });
         }
         dataToSend = formData;
       }
-      
-      // UPDATED: Uses BASE_URL
+
       const res = await axios.put(
         `${BASE_URL}/product/updateProducts/${id}`,
         dataToSend,
