@@ -1,9 +1,12 @@
-const cloudinary = require("cloudinary");
+const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
+const dotenv = require("dotenv");
+dotenv.config();
+
 cloudinary.config({
-  cloud_name: "dfyxnv967",
-  api_key: "884685519523628",
-  api_secret: "UoqGFzjyk_ru3hiY-Ui-K-__lv0",
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true,
 });
 
@@ -21,7 +24,11 @@ const newCloud = async (filePath, folder = "Scarlett Marque") => {
     }
     return { url: upload.secure_url, public_id: upload.public_id };
   } catch (err) {
-    console.log(err);
+    console.log("Cloudinary Upload Error:", err);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 };
+
 module.exports = { newCloud };
