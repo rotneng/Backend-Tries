@@ -38,6 +38,38 @@ import { getProducts, deleteProduct } from "../../Actions/product.actions";
 
 const PRIMARY_COLOR = "#0f2a1d";
 const PLACEHOLDER_IMG = "https://placehold.co/300x300?text=No+Image";
+const API_BASE_URL = "http://localhost:5000";
+
+const getProductImage = (product) => {
+  if (!product) return PLACEHOLDER_IMG;
+
+  const isFullUrl = (path) =>
+    path && (path.startsWith("http") || path.startsWith("data:"));
+
+  const extractPath = (obj) => {
+    if (!obj) return null;
+    if (typeof obj === "string") return obj;
+    if (obj.img) return obj.img;
+    if (obj.url) return obj.url;
+    return null;
+  };
+
+  let rawPath = null;
+  if (product.images && product.images.length > 0) {
+    rawPath = extractPath(product.images[0]);
+  }
+  if (!rawPath) rawPath = extractPath(product.image);
+  if (!rawPath) rawPath = extractPath(product.productPictures?.[0]);
+
+  if (!rawPath) return PLACEHOLDER_IMG;
+  if (isFullUrl(rawPath)) return rawPath;
+  const cleanBase = API_BASE_URL.endsWith("/")
+    ? API_BASE_URL.slice(0, -1)
+    : API_BASE_URL;
+  const cleanPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+
+  return `${cleanBase}${cleanPath}`;
+};
 
 const Homepage = () => {
   const dispatch = useDispatch();
@@ -299,10 +331,7 @@ const Homepage = () => {
                 const currentStock = getStock(item);
                 const isOutOfStock = currentStock <= 0;
                 const isLowStock = currentStock > 0 && currentStock < 5;
-                const displayImage =
-                  item.images && item.images.length > 0
-                    ? item.images[0]
-                    : item.image || PLACEHOLDER_IMG;
+                const displayImage = getProductImage(item);
 
                 return (
                   <Grid item key={item._id} xs={12} sm={6} md={4} lg={3}>

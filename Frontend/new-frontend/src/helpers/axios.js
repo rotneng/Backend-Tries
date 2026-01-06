@@ -1,10 +1,9 @@
 import axios from "axios";
 
-// --- SMART URL SWITCH ---
-// If on Localhost, use Localhost. If on Vercel/Mobile, use Render.
-const api = window.location.hostname === "localhost" 
-  ? "http://localhost:3000" 
-  : "https://scarlett-marque.onrender.com";
+const api =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://scarlett-marque.onrender.com";
 
 const axiosInstance = axios.create({
   baseURL: api,

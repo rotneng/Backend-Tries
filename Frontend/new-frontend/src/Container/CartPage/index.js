@@ -32,8 +32,10 @@ import {
   addItemToCart,
   removeCartItem,
 } from "../../Actions/cartActions";
-
 import { getProducts } from "../../Actions/product.actions";
+
+const API_BASE_URL = "http://localhost:5000";
+const PLACEHOLDER_IMG = "https://placehold.co/300x300?text=No+Image";
 
 const CartPage = () => {
   const dispatch = useDispatch();
@@ -52,47 +54,42 @@ const CartPage = () => {
       dispatch(getProducts());
     }
   }, [dispatch, products]);
+
   const getProductImage = (item) => {
-    if (!item) return "https://via.placeholder.com/150";
-    if (item.name === "Dress" || item.title === "Dress") {
-      console.log("DEBUG DRESS ITEM:", item);
-    }
-    const extractUrl = (data) => {
-      if (!data) return null;
-      if (typeof data === "string") return data;
-      if (typeof data === "object") {
-        return data.img || data.url || data.image || data.filename || data.path;
-      }
+    if (!item) return PLACEHOLDER_IMG;
+    const isFullUrl = (path) =>
+      path && (path.startsWith("http") || path.startsWith("data:"));
+    const extractPath = (obj) => {
+      if (!obj) return null;
+      if (typeof obj === "string") return obj;
+      if (obj.img) return obj.img;
+      if (obj.image) return obj.image;
+      if (obj.url) return obj.url;
+      if (obj.filename) return obj.filename;
       return null;
     };
 
-    let url = extractUrl(item.image) || extractUrl(item.img);
-    if (url) return url;
+    let rawPath = null;
+    const targets = [item, item.product || {}];
 
-    if (item.images && Array.isArray(item.images) && item.images.length > 0) {
-      url = extractUrl(item.images[0]);
-      if (url) return url;
-    }
-    if (item.product && typeof item.product === "object") {
-      const p = item.product;
-
-      url = extractUrl(p.image) || extractUrl(p.img);
-      if (url) return url;
-
-      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-        url = extractUrl(p.images[0]);
-        if (url) return url;
+    for (const target of targets) {
+      if (rawPath) break;
+      if (target.productPictures && target.productPictures.length > 0) {
+        rawPath = extractPath(target.productPictures[0]);
       }
-      if (
-        p.productPictures &&
-        Array.isArray(p.productPictures) &&
-        p.productPictures.length > 0
-      ) {
-        url = extractUrl(p.productPictures[0]);
-        if (url) return url;
+      if (!rawPath && target.images && target.images.length > 0) {
+        rawPath = extractPath(target.images[0]);
       }
+
+      if (!rawPath) rawPath = extractPath(target.image);
+      if (!rawPath) rawPath = extractPath(target.img);
     }
-    return "https://via.placeholder.com/150";
+    if (!rawPath) return PLACEHOLDER_IMG;
+    if (isFullUrl(rawPath)) return rawPath;
+    const cleanBase = API_BASE_URL.replace(/\/$/, "");
+    const cleanPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+
+    return `${cleanBase}${cleanPath}`;
   };
 
   const getStock = (p) => {
@@ -183,7 +180,6 @@ const CartPage = () => {
             <br />
             Order ID: <strong>{orderId}</strong>
           </Typography>
-
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -259,6 +255,7 @@ const CartPage = () => {
       </Box>
     );
   }
+
   return (
     <Box sx={{ bgcolor: "#f4f6f8", minHeight: "100vh", py: 4 }}>
       <Container maxWidth="lg">
@@ -293,6 +290,8 @@ const CartPage = () => {
                   : 1000;
               const isMaxedOut = item.qty >= stockLimit;
 
+              const displayImage = getProductImage(realProduct || item);
+
               return (
                 <Card
                   key={item._id || productId}
@@ -324,20 +323,19 @@ const CartPage = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      border: "1px solid #f0f0f0",
                     }}
                   >
                     <img
-                      src={
-                        getProductImage(item) !==
-                        "https://via.placeholder.com/150"
-                          ? getProductImage(item)
-                          : getProductImage(realProduct)
-                      }
+                      src={displayImage}
                       alt={item.title || item.name}
                       style={{
                         width: "100%",
                         height: "100%",
                         objectFit: "contain",
+                      }}
+                      onError={(e) => {
+                        e.target.src = PLACEHOLDER_IMG;
                       }}
                     />
                   </Box>
@@ -397,7 +395,6 @@ const CartPage = () => {
                         </Tooltip>
                       </Stack>
                     </Box>
-
                     <Stack
                       direction={{ xs: "column", sm: "row" }}
                       justifyContent="space-between"
@@ -412,7 +409,6 @@ const CartPage = () => {
                       >
                         ₦{item.price ? item.price.toLocaleString() : 0}
                       </Typography>
-
                       <Box>
                         <Stack
                           direction="row"
@@ -492,7 +488,6 @@ const CartPage = () => {
                 Order Summary
               </Typography>
               <Divider sx={{ my: 2 }} />
-
               <Stack direction="row" justifyContent="space-between" mb={1}>
                 <Typography color="text.secondary">Subtotal</Typography>
                 <Typography fontWeight="500">
@@ -505,9 +500,7 @@ const CartPage = () => {
                   Calculated at checkout
                 </Typography>
               </Stack>
-
               <Divider sx={{ mb: 2, borderStyle: "dashed" }} />
-
               <Stack direction="row" justifyContent="space-between" mb={4}>
                 <Typography variant="h6" fontWeight="bold">
                   Total
@@ -516,7 +509,6 @@ const CartPage = () => {
                   ₦{totalPrice.toLocaleString()}
                 </Typography>
               </Stack>
-
               <Button
                 variant="contained"
                 fullWidth

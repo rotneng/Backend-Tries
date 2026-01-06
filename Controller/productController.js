@@ -16,22 +16,32 @@ exports.addProducts = async (req, res) => {
   try {
     const { title, description, price, category, sizes, colors, stock } =
       req.body;
-
     const imageFiles = req.files;
-    let imageUrls = [];
+
+    console.log(
+      `Adding Product. Files received: ${imageFiles ? imageFiles.length : 0}`
+    );
 
     if (!title || !price) {
       return res.status(400).json({ message: "Title and Price are required" });
     }
+
+    let imageUrls = [];
+
     if (imageFiles && imageFiles.length > 0) {
       for (const file of imageFiles) {
         const uploadResult = await newCloud(file.path);
+
         if (uploadResult && uploadResult.url) {
-          imageUrls.push(uploadResult.url);
+          imageUrls.push({
+            img: uploadResult.url,
+            public_id: uploadResult.public_id,
+          });
         }
       }
       console.log("Images uploaded to cloudinary:", imageUrls);
     }
+
     const safeSizes = Array.isArray(sizes)
       ? sizes.join(",")
       : (sizes || "").trim();
@@ -78,53 +88,53 @@ exports.updateProducts = async (req, res) => {
     if (!product) {
       return res.status(400).json({ message: "Product does not exist" });
     }
-    console.log("Found product to update", product.title);
+
     if (req.body.title) product.title = req.body.title.trim();
     if (req.body.description) product.description = req.body.description.trim();
     if (req.body.price) product.price = req.body.price;
     if (req.body.category) product.category = req.body.category.trim();
     if (req.body.stock) product.stock = Number(req.body.stock);
+    if (req.body.sizes) product.sizes = req.body.sizes;
+    if (req.body.colors) product.colors = req.body.colors;
 
-    if (req.body.sizes) {
-      product.sizes = Array.isArray(req.body.sizes)
-        ? req.body.sizes.join(",")
-        : req.body.sizes.trim();
-    }
+    let retainedImages = [];
 
-    if (req.body.colors) {
-      product.colors = Array.isArray(req.body.colors)
-        ? req.body.colors.join(",")
-        : req.body.colors.trim();
+    if (req.body.existingImages) {
+      const incomingImages = Array.isArray(req.body.existingImages)
+        ? req.body.existingImages
+        : [req.body.existingImages];
+
+      if (product.images && product.images.length > 0) {
+        retainedImages = product.images.filter((dbImg) => {
+          const dbUrl = typeof dbImg === "string" ? dbImg : dbImg.img;
+          return incomingImages.includes(dbUrl);
+        });
+      }
     }
 
     const imageFiles = req.files;
-
-    let currentImages = product.images || [];
-    if (!Array.isArray(currentImages)) {
-      currentImages = product.image ? [product.image] : [];
-    }
+    let newImageUrls = [];
 
     if (imageFiles && imageFiles.length > 0) {
-      const newImageUrls = [];
       for (const file of imageFiles) {
         const uploadResult = await newCloud(file.path);
         if (uploadResult && uploadResult.url) {
-          newImageUrls.push(uploadResult.url);
+          newImageUrls.push({
+            img: uploadResult.url,
+            public_id: uploadResult.public_id,
+          });
         }
       }
-      console.log("New images added:", newImageUrls);
-      product.images = [...currentImages, ...newImageUrls];
-    } else {
-      product.images = currentImages;
     }
+
+    product.images = [...retainedImages, ...newImageUrls];
 
     const update = await product.save();
 
     if (update) {
-      console.log("updating product success");
       return res
         .status(200)
-        .json({ message: "product update succesfull", product: update });
+        .json({ message: "product update successful", product: update });
     }
   } catch (error) {
     console.log("error updating products", error);

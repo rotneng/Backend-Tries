@@ -8,7 +8,7 @@ const {
   updateProducts,
   deleteProducts,
 } = require("../Controller/productController");
-const { requireSignin } = require("../Middlewares/auth"); 
+const { requireSignin } = require("../Middlewares/auth");
 const router = express.Router();
 
 const uploadDir = path.join(__dirname, "../uploads");

@@ -15,6 +15,8 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { getProducts, updateProduct } from "../../../Actions/product.actions";
 
+const API_BASE_URL = "http://localhost:5000";
+
 const UpdateProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,34 +37,68 @@ const UpdateProduct = () => {
   const [newImages, setNewImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const formatImageForDisplay = (imgData) => {
+    if (!imgData) return null;
+
+    let path = imgData;
+    if (typeof imgData === "object") {
+      path = imgData.img || imgData.url || imgData.filename;
+    }
+
+    if (!path) return null;
+
+    if (path.startsWith("http") || path.startsWith("data:")) {
+      return path;
+    }
+
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    return `${API_BASE_URL}${cleanPath}`;
+  };
+
   useEffect(() => {
     if (products.length === 0) {
       dispatch(getProducts());
     } else {
       const productToEdit = products.find((p) => p._id === id);
       if (productToEdit) {
-        setTitle(productToEdit.title);
-        setDescription(productToEdit.description);
-        setPrice(productToEdit.price);
-        setCategory(productToEdit.category);
-        setStock(productToEdit.stock);
-        setSizes(productToEdit.sizes || "");
-        setColors(productToEdit.colors || "");
+        setTitle(productToEdit.title || "");
+        setDescription(productToEdit.description || "");
+        setPrice(productToEdit.price || "");
+        setCategory(productToEdit.category || "");
+        setStock(productToEdit.stock || "");
 
+        setSizes(
+          Array.isArray(productToEdit.sizes)
+            ? productToEdit.sizes.join(",")
+            : productToEdit.sizes || ""
+        );
+        setColors(
+          Array.isArray(productToEdit.colors)
+            ? productToEdit.colors.join(",")
+            : productToEdit.colors || ""
+        );
+
+        let rawImages = [];
         if (productToEdit.images && productToEdit.images.length > 0) {
-          setExistingImages(productToEdit.images);
-        } else if (productToEdit.image) {
-          setExistingImages([productToEdit.image]);
-        } else {
-          setExistingImages([]);
+          rawImages = productToEdit.images;
+        } else if (
+          productToEdit.productPictures &&
+          productToEdit.productPictures.length > 0
+        ) {
+          rawImages = productToEdit.productPictures;
         }
+
+        const formatted = rawImages
+          .map((img) => formatImageForDisplay(img))
+          .filter((url) => url !== null);
+
+        setExistingImages(formatted);
       }
     }
   }, [id, products, dispatch]);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-
     if (files.length > 0) {
       const validFiles = files.filter((file) => file.type.startsWith("image/"));
       setNewImages((prev) => [...prev, ...validFiles]);
@@ -93,7 +129,12 @@ const UpdateProduct = () => {
       formData.append("colors", colors);
 
       existingImages.forEach((url) => {
-        formData.append("existingImages", url);
+        let cleanPath = url;
+        if (url.startsWith(API_BASE_URL)) {
+          cleanPath = url.replace(API_BASE_URL, "");
+        }
+
+        formData.append("existingImages", cleanPath);
       });
 
       if (newImages.length > 0) {
@@ -185,6 +226,7 @@ const UpdateProduct = () => {
                 value={sizes}
                 onChange={(e) => setSizes(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                helperText="Comma separated (e.g. S,M,L)"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -194,6 +236,7 @@ const UpdateProduct = () => {
                 value={colors}
                 onChange={(e) => setColors(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                helperText="Comma separated (e.g. Red,Blue)"
               />
             </Grid>
 
@@ -208,7 +251,6 @@ const UpdateProduct = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-
             <Grid item xs={12}>
               <Box
                 sx={{
@@ -222,8 +264,9 @@ const UpdateProduct = () => {
                   variant="subtitle2"
                   sx={{ mb: 1, color: "text.secondary" }}
                 >
-                  Current Images (Saved in Database)
+                  Current Images (Click trash icon to delete)
                 </Typography>
+
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
                   {existingImages.length > 0 ? (
                     existingImages.map((imgUrl, index) => (
@@ -264,12 +307,14 @@ const UpdateProduct = () => {
                       </Box>
                     ))
                   ) : (
-                    <Typography variant="caption" sx={{ fontStyle: "italic" }}>
-                      No existing images.
+                    <Typography
+                      variant="caption"
+                      sx={{ fontStyle: "italic", color: "orange" }}
+                    >
+                      All existing images removed.
                     </Typography>
                   )}
                 </Box>
-
                 <Typography
                   variant="subtitle2"
                   sx={{ mb: 1, color: "text.secondary" }}

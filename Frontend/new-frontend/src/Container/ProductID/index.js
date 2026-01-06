@@ -29,9 +29,20 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUserOutlined";
 import LocalShippingIcon from "@mui/icons-material/LocalShippingOutlined";
 import BlockIcon from "@mui/icons-material/Block";
-
 import { getProducts } from "../../Actions/product.actions";
 import { addItemToCart } from "../../Actions/cartActions";
+
+const API_BASE_URL = "http://localhost:5000/public/";
+const PLACEHOLDER_IMG = "https://placehold.co/600x600?text=No+Image";
+
+const getValidImageUrl = (imagePath) => {
+  if (!imagePath) return PLACEHOLDER_IMG;
+  if (imagePath.startsWith("http") || imagePath.startsWith("data:")) {
+    return imagePath;
+  }
+  const cleanPath = imagePath.startsWith("/") ? imagePath.slice(1) : imagePath;
+  return `${API_BASE_URL}${cleanPath}`;
+};
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -66,20 +77,28 @@ const ProductDetails = () => {
   useEffect(() => {
     if (product) {
       if (product.images && product.images.length > 0) {
-        setSelectedImage(product.images[0]);
+        setSelectedImage(
+          getValidImageUrl(product.images[0].img || product.images[0])
+        );
       } else if (product.image) {
-        setSelectedImage(product.image);
+        setSelectedImage(getValidImageUrl(product.image));
       } else {
-        setSelectedImage("https://placehold.co/600x600?text=No+Image");
+        setSelectedImage(PLACEHOLDER_IMG);
       }
     }
   }, [product]);
 
   const getAllImages = () => {
     if (!product) return [];
-    if (product.images && product.images.length > 0) return product.images;
-    if (product.image) return [product.image];
-    return [];
+
+    let rawImages = [];
+    if (product.images && product.images.length > 0) {
+      rawImages = product.images.map((img) => img.img || img);
+    } else if (product.image) {
+      rawImages = [product.image];
+    }
+
+    return rawImages.map((path) => getValidImageUrl(path));
   };
 
   const productImages = getAllImages();
@@ -249,7 +268,7 @@ const ProductDetails = () => {
                   src={selectedImage}
                   alt={product.title}
                   onError={(e) => {
-                    e.target.src = "https://placehold.co/600x600?text=No+Image";
+                    e.target.src = PLACEHOLDER_IMG;
                   }}
                   sx={{
                     maxWidth: "95%",
