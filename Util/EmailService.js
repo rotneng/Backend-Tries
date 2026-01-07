@@ -1,8 +1,11 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
+
 const createTransporter = async () => {
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com", // Explicit Host
+    port: 465,              // Explicit Port (Secure)
+    secure: true,           // Use SSL
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -31,8 +34,10 @@ const sendEmail = async (email, otp) => {
   try {
     const transporter = await createTransporter();
 
+    console.log("Attempting to send email to:", email); // Log start
+
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`, // Adds a nice sender name
       to: email,
       subject: "Welcome to Scarlett Marque",
       text: `Your verification token is ${otp}`,
@@ -41,7 +46,7 @@ const sendEmail = async (email, otp) => {
 
     console.log("Message sent: %s", info.messageId);
   } catch (error) {
-    console.log("Error sending Email", error);
+    console.error("CRITICAL EMAIL ERROR:", error); // Log error clearly
   }
 };
 
