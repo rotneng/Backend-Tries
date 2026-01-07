@@ -1,18 +1,22 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-const createTransporter = async () => {
+// removed 'async' here because createTransport is synchronous
+const createTransporter = () => {
     return nodemailer.createTransport({
         service: "gmail",
-        // port: 587,
-        // secure: false,
+        host: "smtp.gmail.com",
+        port: 587,         // ENABLE THIS for Render
+        secure: false,     // Must be false for port 587
         auth: {
-            // user: "rotneng@gmail.com",
-            // pass: "xmqyewamsirsaeyo"
-             user: process.env.EMAIL_USER,
+            user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
+        },
+        // This fixes the "Self-signed certificate" errors on cloud servers
+        tls: {
+            rejectUnauthorized: false
         }
-    })
+    });
 }
 
 const emailLayout = (otp) => {
@@ -34,9 +38,12 @@ const emailLayout = (otp) => {
 
 const sendEmail = async (email, otp) => {
   try {
-    const transporter = createTransporter();
+    const transporter = createTransporter(); // Now this works immediately
+
+    console.log("Sending email to:", email);
+
     const info = await transporter.sendMail({
-      from: "rotneng@gmail.com",
+      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`, // Use env var for consistency
       to: email,
       subject: "Welcome to Scarlett Marque",
       text: `Your verification token is ${otp}`,
@@ -45,9 +52,8 @@ const sendEmail = async (email, otp) => {
 
     console.log("SUCCESS: Email sent. Message ID:", info.messageId);
   } catch (error) {
-    console.error("EMAIL FAILED TO SEND:", error.message);
+    console.error("EMAIL FAILED TO SEND:", error);
+  }
 };
-}
 
 module.exports = { createTransporter, sendEmail };
-
