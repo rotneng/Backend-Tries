@@ -1,23 +1,23 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// removed 'async' here because createTransport is synchronous
 const createTransporter = () => {
-    return nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,         // ENABLE THIS for Render
-        secure: false,     // Must be false for port 587
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        },
-        // This fixes the "Self-signed certificate" errors on cloud servers
-        tls: {
-            rejectUnauthorized: false
-        }
-    });
-}
+  return nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // Must be false for port 587
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    // --- THE CRITICAL FIXES FOR RENDER ---
+    tls: {
+      rejectUnauthorized: false, // Fixes SSL/TLS handshake errors
+    },
+    family: 4, // <--- THIS FIXES THE TIMEOUT (Forces IPv4)
+  });
+};
 
 const emailLayout = (otp) => {
   return `
@@ -38,12 +38,12 @@ const emailLayout = (otp) => {
 
 const sendEmail = async (email, otp) => {
   try {
-    const transporter = createTransporter(); // Now this works immediately
+    const transporter = createTransporter();
 
     console.log("Sending email to:", email);
 
     const info = await transporter.sendMail({
-      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`, // Use env var for consistency
+      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Welcome to Scarlett Marque",
       text: `Your verification token is ${otp}`,
@@ -52,7 +52,7 @@ const sendEmail = async (email, otp) => {
 
     console.log("SUCCESS: Email sent. Message ID:", info.messageId);
   } catch (error) {
-    console.error("EMAIL FAILED TO SEND:", error);
+    console.error("EMAIL FAILED TO SEND:", error.message);
   }
 };
 
