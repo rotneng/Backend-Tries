@@ -1,9 +1,35 @@
 import axios from "axios";
 import { authConstants } from "./constant";
 
-const BASE_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:5000" 
-  : "https://scarlett-marque.onrender.com";
+const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://scarlett-marque.onrender.com";
+
+const mergeCart = async (token) => {
+  const localCart = localStorage.getItem("cart")
+    ? JSON.parse(localStorage.getItem("cart"))
+    : [];
+
+  if (localCart.length > 0) {
+    const mergeRequests = localCart.map((item) => {
+      return axios.post(
+        `${BASE_URL}/cart/user/cart/addtocart`,
+        {
+          cartItems: {
+            product: item._id,
+            quantity: item.qty,
+            price: item.price,
+          },
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    });
+
+    await Promise.all(mergeRequests);
+    localStorage.removeItem("cart");
+  }
+};
 
 export const login = (loginData) => {
   return async (dispatch) => {
@@ -26,27 +52,7 @@ export const login = (loginData) => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify({ username, role }));
 
-        const localCart = localStorage.getItem("cart")
-          ? JSON.parse(localStorage.getItem("cart"))
-          : [];
-        if (localCart.length > 0) {
-          const mergeRequests = localCart.map((item) => {
-            return axios.post(
-              `${BASE_URL}/cart/user/cart/addtocart`,
-              {
-                cartItems: {
-                  product: item._id,
-                  quantity: item.qty,
-                  price: item.price,
-                },
-              },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-          });
-
-          await Promise.all(mergeRequests);
-          localStorage.removeItem("cart");
-        }
+        await mergeCart(token);
 
         dispatch({
           type: authConstants.LOGIN_SUCCESS,
@@ -71,17 +77,36 @@ export const login = (loginData) => {
   };
 };
 
-export const logout = () => {
+export const verifyOtp = (otpData) => {
   return async (dispatch) => {
     try {
-      dispatch({ type: authConstants.LOGOUT_REQUEST });
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      dispatch({ type: authConstants.LOGOUT_SUCCESS });
+      const res = await axios.post(`${BASE_URL}/user/verify-email`, otpData);
 
-      window.location.href = "/signin";
+      if (res.status === 200) {
+        dispatch({
+          type: authConstants.LOGIN_FAILURE,
+          payload: { error: null },
+        });
+
+        return true;
+      }
     } catch (error) {
-      console.log("error in logout action", error);
+      console.log("error in verify otp", error);
+      dispatch({
+        type: authConstants.LOGIN_FAILURE,
+        payload: { error: "Invalid or expired OTP" },
+      });
+      return false;
+    }
+  };
+};
+
+export const resendOtp = (data) => {
+  return async (dispatch) => {
+    try {
+      await axios.post(`${BASE_URL}/user/resend-otp`, data);
+    } catch (error) {
+      console.log("Error resending OTP", error);
     }
   };
 };
@@ -90,11 +115,13 @@ export const register = (signUpData) => {
   return async (dispatch) => {
     try {
       dispatch({ type: authConstants.REGISTER_REQUEST });
+
       const cleanSignUpData = {
         ...signUpData,
         username: signUpData.username ? signUpData.username.trim() : "",
         email: signUpData.email ? signUpData.email.trim().toLowerCase() : "",
       };
+
       const res = await axios.post(
         `${BASE_URL}/user/registerUser`,
         cleanSignUpData
@@ -105,6 +132,7 @@ export const register = (signUpData) => {
           type: authConstants.REGISTER_SUCCESS,
           payload: { message: res.data.message },
         });
+        return true;
       }
     } catch (error) {
       console.log("error in register action", error);
@@ -118,6 +146,23 @@ export const register = (signUpData) => {
         type: authConstants.REGISTER_FAILURE,
         payload: { message: errorMessage },
       });
+      return false;
+    }
+  };
+};
+
+export const logout = () => {
+  return async (dispatch) => {
+    try {
+      dispatch({ type: authConstants.LOGOUT_REQUEST });
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart");
+      dispatch({ type: authConstants.LOGOUT_SUCCESS });
+
+      window.location.href = "/signin";
+    } catch (error) {
+      console.log("error in logout action", error);
     }
   };
 };

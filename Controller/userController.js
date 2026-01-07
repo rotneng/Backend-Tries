@@ -132,3 +132,65 @@ exports.getShippingAddress = async (req, res) => {
     return res.status(500).json({ message: "Error fetching address" });
   }
 };
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const tokenDoc = await Token.findOne({ email, token: otp });
+
+    if (!tokenDoc) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    user.isVerified = true;
+    await user.save();
+    await Token.findByIdAndDelete(tokenDoc._id);
+    const authToken = jwt.sign(
+      {
+        userId: user._id,
+        username: user.username,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      message: "Email verified and logged in successfully",
+      token: authToken,
+      user: {
+        username: user.username,
+        role: user.role,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.log("Error verifying email:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error during verification" });
+  }
+};
+
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    await Token.findOneAndUpdate(
+      { email },
+      { token: otp },
+      { upsert: true, new: true }
+    );
+
+    await sendEmail(email, otp);
+
+    return res.status(200).json({ message: "OTP resent successfully" });
+  } catch (error) {
+    console.log("Error resending OTP:", error);
+    return res.status(500).json({ message: "Error resending OTP" });
+  }
+};

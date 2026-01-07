@@ -18,12 +18,13 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useState, useEffect } from "react";
 import { register } from "../../Actions/auth.actions";
+import { authConstants } from "../../Actions/constant";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const auth = useSelector((state) => state.auth || state.user);
+  const auth = useSelector((state) => state.auth);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -35,12 +36,15 @@ const SignUp = () => {
     setter(e.target.value);
     if (localError) setLocalError("");
   };
+
   useEffect(() => {
-    if (!auth.loading && (auth.message || auth.authenticate)) {
-      alert("Registration Successful! Please Sign In.");
-      navigate("/signin", { replace: true });
+    if (!auth.loading && auth.message && !auth.error) {
+      navigate("/otp-verify", {
+        state: { email: email },
+        replace: true,
+      });
     }
-  }, [auth.loading, auth.message, auth.authenticate, navigate]);
+  }, [auth.loading, auth.message, auth.error, navigate, email, dispatch]);
 
   const handleRegistration = (e) => {
     if (e) e.preventDefault();

@@ -11,31 +11,21 @@ import {
   IconButton,
   CircularProgress,
   Tooltip,
-  AppBar,
-  Toolbar,
   Container,
-  Stack,
   Chip,
-  Badge,
   alpha,
-  Button,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import LogoutIcon from "@mui/icons-material/Logout";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import InfoIcon from "@mui/icons-material/Info";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import ListAltIcon from "@mui/icons-material/ListAlt";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import SearchOffIcon from "@mui/icons-material/SearchOff";
 import BlockIcon from "@mui/icons-material/Block";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getProducts, deleteProduct } from "../../Actions/product.actions";
+import Header from "../header";
 
 const PRIMARY_COLOR = "#0f2a1d";
 const PLACEHOLDER_IMG = "https://placehold.co/300x300?text=No+Image";
@@ -79,7 +69,6 @@ const Homepage = () => {
   const productState = useSelector((state) => state.product);
   const products = productState?.products || [];
   const loading = productState?.loading || false;
-  const cartItems = useSelector((state) => state.cart?.cartItems || []);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -133,219 +122,47 @@ const Homepage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/signIn";
-  };
-
-  const navButtonStyle = {
-    color: "white",
-    textTransform: "none",
-    minWidth: "auto",
-    paddingX: 1.5,
-    "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
-    },
-  };
-
-  const labelStyle = {
-    display: { xs: "none", md: "inline" },
-    marginLeft: "4px",
-  };
-
   return (
     <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh" }}>
-      <AppBar
-        position="sticky"
-        elevation={0}
-        sx={{
-          bgcolor: PRIMARY_COLOR,
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <Toolbar
-          sx={{
-            py: { xs: 2, md: 1 },
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: { xs: 2, md: 2 },
-          }}
-        >
-          <Box
-            onClick={() => navigate("/")}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              cursor: "pointer",
-              width: { xs: "100%", md: "auto" },
-              justifyContent: { xs: "center", md: "flex-start" },
-              "&:hover": { opacity: 0.9 },
-            }}
-          >
-            <Typography
-              variant="h5"
-              noWrap
-              sx={{
-                fontFamily: '"Playfair Display", serif',
-                fontWeight: 700,
-                letterSpacing: ".1rem",
-                color: "white",
-              }}
-            >
-              Scarlett Marque
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              width: { xs: "100%", md: "auto" },
-              flexGrow: { md: 1 },
-              maxWidth: "600px",
-            }}
-          >
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Search collections..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
-              sx={{
-                bgcolor: "white",
-                borderRadius: "50px",
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "50px",
-                  "& fieldset": { border: "none" },
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: PRIMARY_COLOR }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{
-              width: { xs: "100%", md: "auto" },
-              justifyContent: { xs: "center", md: "flex-end" },
-              flexWrap: "wrap",
-            }}
-          >
-            {!isAdmin && (
-              <Button
-                onClick={() => navigate("/about")}
-                sx={navButtonStyle}
-                startIcon={<InfoIcon />}
-              >
-                <Box component="span" sx={labelStyle}>
-                  About Us
-                </Box>
-              </Button>
-            )}
-
-            {isAdmin ? (
-              <>
-                <Button
-                  onClick={() => navigate("/admin/orders")}
-                  sx={navButtonStyle}
-                  startIcon={<ListAltIcon />}
-                >
-                  <Box component="span" sx={labelStyle}>
-                    Orders
-                  </Box>
-                </Button>
-                <Button
-                  onClick={() => navigate("/addproducts")}
-                  sx={navButtonStyle}
-                  startIcon={<AddIcon />}
-                >
-                  <Box component="span" sx={labelStyle}>
-                    Add Product
-                  </Box>
-                </Button>
-              </>
-            ) : (
-              <>
-                {token && (
-                  <Button
-                    onClick={() => navigate("/account/orders")}
-                    sx={navButtonStyle}
-                    startIcon={<LocalShippingIcon />}
-                  >
-                    <Box component="span" sx={labelStyle}>
-                      My Orders
-                    </Box>
-                  </Button>
-                )}
-                <Button
-                  onClick={() => navigate("/cart")}
-                  sx={navButtonStyle}
-                  startIcon={
-                    <Badge badgeContent={cartItems.length} color="warning">
-                      <ShoppingCartIcon />
-                    </Badge>
-                  }
-                >
-                  <Box component="span" sx={labelStyle}>
-                    Cart
-                  </Box>
-                </Button>
-              </>
-            )}
-
-            {token ? (
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{
-                  ml: 1,
-                  pl: 1,
-                  borderLeft: { md: "1px solid rgba(255,255,255,0.2)" }, // Divider only on desktop
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    display: { xs: "none", md: "block" },
-                    opacity: 0.9,
-                    color: "white",
-                  }}
-                >
-                  {user?.username}
-                </Typography>
-                <Tooltip title="Logout">
-                  <IconButton onClick={handleLogout} sx={{ color: "white" }}>
-                    <LogoutIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            ) : (
-              <Button
-                onClick={() => navigate("/signIn")}
-                sx={navButtonStyle}
-                startIcon={<AccountCircleIcon />}
-              >
-                <Box component="span" sx={labelStyle}>
-                  Sign In
-                </Box>
-              </Button>
-            )}
-          </Stack>
-        </Toolbar>
-      </AppBar>
+      <Header />
 
       <Container maxWidth="xl" sx={{ py: 5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            mb: 4,
+          }}
+        >
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search collections..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="medium"
+            sx={{
+              maxWidth: "500px",
+              bgcolor: "white",
+              borderRadius: "50px",
+              boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "50px",
+                "& fieldset": { border: "1px solid #e0e0e0" },
+                "&:hover fieldset": { borderColor: PRIMARY_COLOR },
+                "&.Mui-focused fieldset": { borderColor: PRIMARY_COLOR },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: PRIMARY_COLOR }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+
         {loading ? (
           <Box
             sx={{

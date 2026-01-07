@@ -4,16 +4,18 @@ const {
   loginUser,
   saveShippingAddress,
   getShippingAddress,
+  verifyEmail, 
+  resendOtp,  
 } = require("../Controller/userController");
 const { requireSignin } = require("../Middlewares/auth");
 const router = express.Router();
-
 router.post("/registerUser", registerUser);
+router.post("/verify-email", verifyEmail); 
+router.post("/resend-otp", resendOtp);     
 router.post("/loginUser", loginUser);
 
 router.post("/shipping", requireSignin, saveShippingAddress);
 router.get("/shipping", requireSignin, getShippingAddress);
-
 router.get("/profile", requireSignin, (req, res) => {
   res.status(200).json({ message: "user profile", user: req.user });
 });

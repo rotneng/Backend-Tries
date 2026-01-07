@@ -19,6 +19,7 @@ import PlaceOrderPage from "./Container/PlaceOrderPage";
 import TrackOrderPage from "./Container/TrackOrderPage";
 import AdminOrdersPage from "./Container/AdminOrderPage";
 import MyOrdersPage from "./Container/MyOdersPage";
+import OtpVerification from "./Container/OTPpage";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/otp-verify" element={<OtpVerification />} />
 
           <Route element={<PrivateRoute />}>
             <Route path="/product/edit/:id" element={<UpdateProduct />} />
