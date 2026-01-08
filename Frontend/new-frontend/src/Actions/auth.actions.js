@@ -6,7 +6,6 @@ const BASE_URL =
     ? "http://localhost:5000"
     : "https://scarlett-marque.onrender.com";
 
-// --- Helper: Merge Cart ---
 const mergeCart = async (token) => {
   const localCart = localStorage.getItem("cart")
     ? JSON.parse(localStorage.getItem("cart"))
@@ -32,7 +31,6 @@ const mergeCart = async (token) => {
   }
 };
 
-// --- 1. Login Action ---
 export const login = (loginData) => {
   return async (dispatch) => {
     try {
@@ -79,14 +77,12 @@ export const login = (loginData) => {
   };
 };
 
-// --- 2. Verify OTP Action ---
 export const verifyOtp = (otpData) => {
   return async (dispatch) => {
     try {
       const res = await axios.post(`${BASE_URL}/user/verify-email`, otpData);
 
       if (res.status === 200) {
-        // Clearing errors upon success
         dispatch({
           type: authConstants.LOGIN_FAILURE,
           payload: { error: null },
@@ -105,7 +101,6 @@ export const verifyOtp = (otpData) => {
   };
 };
 
-// --- 3. Resend OTP Action ---
 export const resendOtp = (data) => {
   return async (dispatch) => {
     try {
@@ -116,7 +111,6 @@ export const resendOtp = (data) => {
   };
 };
 
-// --- 4. Register Action ---
 export const register = (signUpData) => {
   return async (dispatch) => {
     try {
@@ -157,7 +151,6 @@ export const register = (signUpData) => {
   };
 };
 
-// --- 5. Logout Action ---
 export const logout = () => {
   return async (dispatch) => {
     try {
@@ -173,5 +166,3 @@ export const logout = () => {
     }
   };
 };
-
-// ForgotPassword and ResetPassword have been removed.
