@@ -20,8 +20,9 @@ const port = process.env.PORT || 5000;
 
 app.use(helmet());
 app.use(cors({
-  origin: "https://scarlett-marque.vercel.app || http://localhost:3000",
-  credentials: true,
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
