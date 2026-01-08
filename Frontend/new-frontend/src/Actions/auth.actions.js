@@ -1,6 +1,7 @@
 import axios from "axios";
 import { authConstants } from "./constant";
 
+// Define Base URL logic once
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:5000"
@@ -163,6 +164,71 @@ export const logout = () => {
       window.location.href = "/signin";
     } catch (error) {
       console.log("error in logout action", error);
+    }
+  };
+};
+
+export const forgotPassword = (email) => {
+  return async (dispatch) => {
+    dispatch({ type: authConstants.FORGOT_PASSWORD_REQUEST });
+
+    try {
+      const res = await axios.post(`${BASE_URL}/user/forgot-password`, {
+        email,
+      });
+
+      if (res.status === 200) {
+        dispatch({
+          type: authConstants.FORGOT_PASSWORD_SUCCESS,
+          payload: { message: res.data.message },
+        });
+        return true;
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : "Something went wrong";
+
+      dispatch({
+        type: authConstants.FORGOT_PASSWORD_FAILURE,
+        payload: { error: errorMessage },
+      });
+      return false;
+    }
+  };
+};
+
+export const resetPassword = (token, password) => {
+  return async (dispatch) => {
+    dispatch({ type: authConstants.RESET_PASSWORD_REQUEST });
+
+    try {
+      const res = await axios.post(`${BASE_URL}/user/reset-password/${token}`, {
+        password,
+      });
+
+      if (res.status === 200) {
+        dispatch({
+          type: authConstants.RESET_PASSWORD_SUCCESS,
+          payload: { message: res.data.message },
+        });
+      } else {
+        dispatch({
+          type: authConstants.RESET_PASSWORD_FAILURE,
+          payload: { error: res.data.message },
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response && error.response.data
+          ? error.response.data.message
+          : "Something went wrong";
+
+      dispatch({
+        type: authConstants.RESET_PASSWORD_FAILURE,
+        payload: { error: errorMessage },
+      });
     }
   };
 };

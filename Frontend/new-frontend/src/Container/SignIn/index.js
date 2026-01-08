@@ -164,7 +164,22 @@ const SignIn = () => {
                 ),
               }}
             />
-            {/* REMOVED FORGOT PASSWORD LINK HERE */}
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+              <Typography
+                variant="body2"
+                onClick={() => navigate("/forgot-password")}
+                sx={{
+                  color: "#0f2a1d",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                Forgot Password?
+              </Typography>
+            </Box>
           </Box>
 
           <Button

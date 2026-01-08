@@ -11,7 +11,7 @@ const initialState = {
   authenticate: !!localStorage.getItem("token"),
   loading: false,
   error: null,
-  message: ""
+  message: "",
 };
 
 const authReducer = (state = initialState, action) => {
@@ -56,7 +56,7 @@ const authReducer = (state = initialState, action) => {
         authenticate: false,
         loading: false,
         error: null,
-        message: "Logged out successfully"
+        message: "Logged out successfully",
       };
 
     case authConstants.LOGOUT_FAILURE:
@@ -78,7 +78,7 @@ const authReducer = (state = initialState, action) => {
         ...state,
         loading: false,
         error: null,
-        message: "Registration Successful"
+        message: "Registration Successful",
       };
 
     case authConstants.REGISTER_FAILURE:
@@ -86,6 +86,30 @@ const authReducer = (state = initialState, action) => {
         ...state,
         loading: false,
         error: action.payload.message,
+      };
+
+    case authConstants.RESET_PASSWORD_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+        message: "",
+      };
+
+    case authConstants.RESET_PASSWORD_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        error: null,
+        message: action.payload.message,
+      };
+
+    case authConstants.RESET_PASSWORD_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        message: "",
+        error: action.payload.error,
       };
 
     default:

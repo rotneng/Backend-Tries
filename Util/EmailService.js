@@ -1,55 +1,61 @@
 const nodemailer = require("nodemailer");
-require("dotenv").config();
 
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: "smtp-relay.brevo.com", // Brevo Server
-    port: 587,                    // Brevo Port (Standard)
-    secure: false,                // Must be false for 587
-    auth: {
-      user: process.env.BREVO_USER, // Your Brevo Login Email
-      pass: process.env.BREVO_PASS, // Your Long SMTP Key
-    },
-    tls: {
-      rejectUnauthorized: false,  // Fixes certificate issues on Render
-    },
-  });
-};
-
-const emailLayout = (otp) => {
-  return `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Welcome To Scarlett Marque</h1>
-        <p>Your Verification code is:</p>
-        <h2 style="background: #eee; padding: 10px; display: inline-block;">${otp}</h2>
-    </div>`;
-};
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  family: 4,
+});
 
 const sendEmail = async (email, otp) => {
   try {
-    const transporter = createTransporter();
-    
-    // Log the attempt (hiding the password for security)
-    console.log(`[DEBUG] Preparing to send to ${email} via Brevo...`);
-    console.log(`[DEBUG] Auth User: ${process.env.BREVO_USER}`);
+    console.log(`[DEBUG] Sending OTP to: ${email}`);
 
-    // Verify connection before sending
-    await transporter.verify();
-    console.log("[DEBUG] Connection Verified! Sending now...");
-
-    const info = await transporter.sendMail({
-      from: `"Scarlett Marque" <${process.env.BREVO_USER}>`, 
+    await transporter.sendMail({
+      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Your Verification Code",
-      html: emailLayout(otp),
+      subject: "Verification Code - Scarlett Marque",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Verification Code</h2>
+            <p>Your verification code is:</p>
+            <h1 style="color: #0f2a1d; letter-spacing: 2px;">${otp}</h1>
+            <p>Please do not share this code with anyone.</p>
+        </div>
+      `,
     });
 
-    console.log("SUCCESS: Email sent. ID:", info.messageId);
+    console.log("✅ OTP Email sent successfully.");
   } catch (error) {
-    console.error("EMAIL FAILED TO SEND. Error Details:");
-    console.error(error.message);
-    if(error.code === 'EAUTH') console.error("--> HINT: Your SMTP Key is wrong or your account is not active.");
+    console.error("❌ OTP EMAIL FAILED:", error.message);
   }
 };
 
-module.exports = { createTransporter, sendEmail };
+const sendResetEmail = async (email, resetUrl) => {
+  try {
+    console.log(`[DEBUG] Sending Reset Link to: ${email}`);
+
+    await transporter.sendMail({
+      from: `"Scarlett Marque" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset Request",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Password Reset</h2>
+            <p>You requested a password reset. Click the link below to set a new password:</p>
+            <a href="${resetUrl}" style="display:inline-block; background: #0f2a1d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 10px; font-weight: bold;">Reset Password</a>
+            <p style="margin-top: 20px; color: #888; font-size: 12px;">This link expires in 1 hour.</p>
+            <p style="color: #888; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    console.log("✅ Reset Email sent successfully.");
+  } catch (error) {
+    console.error("❌ RESET EMAIL FAILED:", error.message);
+  }
+};
+
+module.exports = { sendEmail, sendResetEmail };

@@ -2,7 +2,8 @@ const User = require("../Models/userModel");
 const Token = require("../Models/tokenModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../Util/EmailService");
+const crypto = require("crypto");
+const { sendEmail, sendResetEmail } = require("../Util/EmailService");
 
 exports.registerUser = async (req, res) => {
   try {
@@ -27,8 +28,10 @@ exports.registerUser = async (req, res) => {
       const token = new Token({ email, token: otp });
       await token.save();
 
-      sendEmail(email, otp).catch(err => console.log("Background Email Failed:", err));
-      
+      sendEmail(email, otp).catch((err) =>
+        console.log("Background Email Failed:", err)
+      );
+
       console.log("OTP Email process started...");
     } catch (emailError) {
       console.log("Error preparing OTP:", emailError);
@@ -119,7 +122,9 @@ exports.verifyEmail = async (req, res) => {
     });
   } catch (error) {
     console.log("Error verifying email:", error);
-    return res.status(500).json({ message: "Server error during verification" });
+    return res
+      .status(500)
+      .json({ message: "Server error during verification" });
   }
 };
 
@@ -134,7 +139,9 @@ exports.resendOtp = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    sendEmail(email, otp).catch(err => console.log("Resend Email Failed:", err));
+    sendEmail(email, otp).catch((err) =>
+      console.log("Resend Email Failed:", err)
+    );
 
     return res.status(200).json({ message: "OTP resent successfully" });
   } catch (error) {
@@ -179,5 +186,77 @@ exports.getShippingAddress = async (req, res) => {
   } catch (error) {
     console.log("Error fetching address:", error);
     return res.status(500).json({ message: "Error fetching address" });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+    let clientURL = "https://scarlettmarque.vercel.app";
+    const origin = req.headers.origin;
+    if (origin && origin.includes("localhost")) {
+      clientURL = origin;
+    }
+    const resetUrl = `${clientURL}/reset-password/${resetToken}`;
+
+    console.log(`[DEBUG] Sending Reset Link to: ${clientURL}`);
+    sendResetEmail(user.email, resetUrl).catch((err) =>
+      console.log("Reset Email Failed:", err)
+    );
+
+    res.status(200).json({ message: "Password reset link sent to email" });
+  } catch (error) {
+    console.log("Error in forgotPassword:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    console.log("------------------------------------------------");
+    console.log("🔄 RESET PASSWORD ATTEMPT");
+    console.log("Token received:", token);
+    console.log("Password received:", password ? "***" : "MISSING");
+
+    const userWithToken = await User.findOne({ resetPasswordToken: token });
+
+    if (!userWithToken) {
+      console.log("❌ ERROR: No user found with this specific token.");
+      console.log(
+        "   (The token might be wrong, or it was overwritten by a new request)"
+      );
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+    if (userWithToken.resetPasswordExpires < Date.now()) {
+      console.log("❌ ERROR: Token found, but it has EXPIRED.");
+      console.log("   Expires:", userWithToken.resetPasswordExpires);
+      console.log("   Now:", new Date());
+      return res.status(400).json({ message: "Token has expired" });
+    }
+
+    console.log("✅ User found:", userWithToken.email);
+    const salt = await bcrypt.genSalt(10);
+    userWithToken.password = await bcrypt.hash(password, salt);
+    userWithToken.resetPasswordToken = undefined;
+    userWithToken.resetPasswordExpires = undefined;
+    await userWithToken.save();
+    console.log("✅ Password successfully updated in DB");
+    console.log("------------------------------------------------");
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("❌ SERVER ERROR in resetPassword:", error);
+    res.status(500).json({ message: error.message });
   }
 };
